@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta http-equiv="X-UA-Compatible" content="ie=edge">
+	<title>Document</title>
+</head>
+<body style="margin:0; padding: 0;">
+	<table cellpadding="0" cellspacing="0" style="max-width: 700px; border-spacing: 0; ">
+		<tr>
+			<td colspan="3">
+                <a href="$domainUrl" target="_blank">
+                    <img src="$domainUrl/resources/images/mail-header.gif" alt="">
+                </a>
+			</td>
+		</tr>
+		<tr>
+			<td style="width: 30px;"></td>
+			<td>
+				<table cellpadding="0" cellspacing="0" style="width: 100%; table-layout: fixed; border-spacing: 0; ">
+					<tr>
+						<td style="padding: 30px 0 ; text-align: center;">
+							<img src="https://$firstResult.info.fileUrl" alt="" style="display: block; width: 100%;">
+							<strong style="display: block; margin-top: 15px; font-size: 18px; ">$firstResult.info.mak&nbsp;$firstResult.info.detailModel</strong>
+							<span style="font-size: 12px;">$firstResult.info.rating&nbsp;$firstResult.info.detailRating</span>
+						</td>
+						<td style="width: 100px"></td>
+						<td style="padding: 30px 0; text-align: center;">
+							<img src="https://$lastResult.info.fileUrl" alt="" style="display: block; width: 100%;">
+							<strong style="display: block; margin-top: 15px; font-size: 18px; ">$lastResult.info.mak&nbsp;$lastResult.info.detailModel</strong>
+							<span style="font-size: 12px;">$lastResult.info.rating&nbsp;$lastResult.info.detailRating</span>
+						</td>
+					</tr>
+					<tr>
+						<td colspan="3">
+							<table style="width: 100%; table-layout: fixed; text-align: center; font-size: 14px; border-spacing: 0; border-top: 1px solid #767778; border-bottom: 1px solid #767778;">
+								<tr>
+									<td style=" padding: 15px; ">
+										<strong style="color: #0099da; font-size: 16px;">$number.format("##,##0", $firstResult.info.sellPrice)<span style="font-size: 12px;">만원</span></strong>
+									</td>
+									<td style="width: 100px; color: #808890; background-color: #fbfcfc;">
+										가격
+									</td>
+									<td style=" padding: 15px;">
+										<strong style="color: #0099da; font-size: 16px;">$number.format("##,##0", $lastResult.info.sellPrice)<span style="font-size: 12px;">만원</span></strong>
+									</td>
+								</tr>
+                                <tr>
+                                    <td style=" padding: 15px 0; border-top: 1px solid #ebedef;">
+                                        <div style="position: relative; height: 26px; margin: 0 -2px 0; background:url('$domainUrl/resources/images/bg-gauge.png') repeat-x 0 0;">
+                                            <span style="display: block; width: $firstYear%; float: right; height: 100%; background:url('$domainUrl/resources/images/bg-gauge.png') repeat-x 0 -26px;"></span>
+                                        </div>
+                                        <div style="overflow:hidden;">
+                                            <small style="float:left; font-size: 10px; color: #808990;">2018년</small>
+                                            <small style="float: right; font-size: 10px; color: #808990;">2008년 이하</small>
+                                        </div>
+                                        <div style="clear:both; margin-top: -26px; height: 26px;">
+                                            <strong style="text-align: center; line-height: 26px;">$firstResult.info.fromYear 년</strong>
+                                        </div>
+                                    </td>
+                                    <td style="width: 100px; color: #808890; background-color: #fbfcfc; border-top: 1px solid #ebedef;">
+                                        연식
+                                    </td>
+                                    <td style=" padding: 15px 0; border-top: 1px solid #ebedef;">
+                                        <div style="position: relative; width: 100%; height: 26px; margin: 0 -2px 0; background:url('$domainUrl/resources/images/bg-gauge.png') repeat-x 0 0;">
+                                            <span style="display: block; width: $lastYear%; float: left; height: 100%; background:url('$domainUrl/resources/images/bg-gauge.png') repeat-x 0 -26px;"></span>
+                                        </div>
+                                        <div style="overflow:hidden;">
+                                            <small style="float: left; font-size: 10px; color: #808990;">2008년 이하</small>
+                                            <small style="float: right; font-size: 10px; color: #808990;">2018년</small>
+                                        </div>
+                                        <div style="clear:both; margin-top: -26px; height: 26px;">
+                                            <strong style="text-align: center; line-height: 26px;">$lastResult.info.fromYear 년</strong>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style=" padding: 15px 0; border-top: 1px solid #ebedef;">
+                                        <div style="position: relative; height: 26px; margin: 0 -2px 0; background:url('$domainUrl/resources/images/bg-gauge.png') repeat-x 0 0;">
+                                            <span style="display: block; width: $firstDist%; float: right; height: 100%; background:url('$domainUrl/resources/images/bg-gauge.png') repeat-x 0 -26px;"></span>
+                                        </div>
+                                        <div style="overflow:hidden;">
+                                            <small style="float:left; font-size: 10px; color: #808990;">15만km 이상</small>
+                                            <small style="float: right; font-size: 10px; color: #808990;">0km</small>
+                                        </div>
+                                        <div style="clear:both; margin-top: -26px; height: 26px;">
+                                            <strong style="text-align: center; line-height: 26px;">$number.format("##,##0", $firstResult.info.driveDist)km</strong>
+                                        </div>
+                                    </td>
+                                    <td style="width: 100px; color: #808890; background-color: #fbfcfc; border-top: 1px solid #ebedef;">
+                                        주행거리
+                                    </td>
+                                    <td style=" padding: 15px 0; border-top: 1px solid #ebedef;">
+                                        <div style="position: relative; width: 100%; height: 26px; margin: 0 -2px 0; background:url('$domainUrl/resources/images/bg-gauge.png') repeat-x 0 0;">
+                                            <span style="display: block; width: $lastDist%; float: left; height: 100%; background:url('$domainUrl/resources/images/bg-gauge.png') repeat-x 0 -26px;"></span>
+                                        </div>
+                                        <div style="overflow:hidden;">
+                                            <small style="float:left; font-size: 10px; color: #808990;">0km</small>
+                                            <small style="float: right; font-size: 10px; color: #808990;">15만km 이상</small>
+                                        </div>
+                                        <div style="clear:both; margin-top: -26px; height: 26px;">
+                                            <strong style="text-align: center; line-height: 26px;">$number.format("##,##0", $lastResult.info.driveDist)km</strong>
+                                        </div>
+                                    </td>
+                                </tr>
+								<tr>
+									<td style=" padding: 15px; border-top: 1px solid #ebedef;">
+										$number.format("##,##0", $firstResult.carInfo.disp)cc
+									</td>
+									<td style="width: 100px; color: #808890; background-color: #fbfcfc; border-top: 1px solid #ebedef;">
+										배기량
+									</td>
+									<td style=" padding: 15px; border-top: 1px solid #ebedef;">
+										$number.format("##,##0", $lastResult.carInfo.disp)cc
+									</td>
+								</tr>
+								<tr>
+									<td style=" padding: 15px; border-top: 1px solid #ebedef;">
+										$firstResult.info.gear
+									</td>
+									<td style="width: 100px; color: #808890; background-color: #fbfcfc; border-top: 1px solid #ebedef;">
+										변속기
+									</td>
+									<td style=" padding: 15px; border-top: 1px solid #ebedef;">
+										$lastResult.info.gear
+									</td>
+								</tr>
+								<tr>
+									<td style=" padding: 15px; border-top: 1px solid #ebedef;">
+										$firstResult.info.fuel
+									</td>
+									<td style="width: 100px; color: #808890; background-color: #fbfcfc; border-top: 1px solid #ebedef;">
+										연료
+									</td>
+									<td style=" padding: 15px; border-top: 1px solid #ebedef;">
+										$lastResult.info.fuel
+									</td>
+								</tr>
+								<tr>
+									<td style=" padding: 15px; border-top: 1px solid #ebedef;">
+										<ul style="text-align: left; font-size: 0; margin: 0; padding: 0;">
+                                            #foreach($majorOption in $firstResult.majorOptions)
+                                                <li style="display: inline-block; width: 25%; margin: 15px 0; vertical-align: top; font-size: 12px; color: #32434b; text-align: center;">
+                                                    <span style="display: block; height: 56px; padding: 0 10px; white-space: nowrap;">
+                                                        #if ( $majorOption.sellCarSeq )
+                                                            <img src="https://${fileUrlPath}$!{majorOption.thumImgOnFile.filePath}$!{majorOption.thumImgOnFile.fileNm}" alt="" style="display: inline-block; max-width: 100%;">
+                                                        #else
+                                                            <img src="https://${fileUrlPath}$!{majorOption.thumImgOffFile.filePath}$!{majorOption.thumImgOffFile.fileNm}" alt="" style="display: inline-block; max-width: 100%;">
+                                                        #end
+                                                    </span>
+                                                    <span>$majorOption.optNm</span>
+                                                </li>
+                                            #end
+										</ul>
+									</td>
+									<td style="width: 100px; color: #808890; background-color: #fbfcfc; border-top: 1px solid #ebedef;">
+										옵션
+									</td>
+									<td style=" padding: 15px; border-top: 1px solid #ebedef;">
+										<ul style="text-align: left; font-size: 0; margin: 0; padding: 0; list-style: none;">
+											#foreach($majorOption in $lastResult.majorOptions)
+                                                <li style="display: inline-block; width: 25%; margin: 15px 0; vertical-align: top; font-size: 12px; color: #32434b; text-align: center;">
+                                                    <span style="display: block; height: 56px; padding: 0 10px; white-space: nowrap;">
+                                                        #if ( $majorOption.sellCarSeq )
+                                                            <img src="https://${fileUrlPath}$!{majorOption.thumImgOnFile.filePath}$!{majorOption.thumImgOnFile.fileNm}" alt="" style="display: inline-block; max-width: 100%;">
+                                                        #else
+                                                            <img src="https://${fileUrlPath}$!{majorOption.thumImgOffFile.filePath}$!{majorOption.thumImgOffFile.fileNm}" alt="" style="display: inline-block; max-width: 100%;">
+                                                        #end
+                                                    </span>
+                                                    <span>$majorOption.optNm</span>
+                                                </li>
+                                            #end
+										</ul>
+									</td>
+								</tr>
+								<tr>
+									<td style=" padding: 15px; border-top: 1px solid #ebedef;">
+										#if ( "$firstResult.priceInfo.accidHisYn" == "Y" )
+                                            유
+                                        #elseif ( "$firstResult.priceInfo.accidHisYn" == "N" )
+                                            무
+                                        #else
+                                            비공개
+										#end
+									</td>
+									<td style="width: 100px; color: #808890; background-color: #fbfcfc; border-top: 1px solid #ebedef;">
+										사고유무
+									</td>
+									<td style=" padding: 15px; border-top: 1px solid #ebedef;">
+										#if ( "$lastResult.priceInfo.accidHisYn" == "Y" )
+                                            유
+                                        #elseif ( "$lastResult.priceInfo.accidHisYn" == "N" )
+                                            무
+                                        #else
+                                            비공개
+                                        #end
+									</td>
+								</tr>
+								<tr>
+									<td style=" padding: 15px; border-top: 1px solid #ebedef;">
+										<strong>$firstResult.branchVo.branch.storeNm</strong>
+										<ul style="list-style: none; margin: 10px 0 0 0; padding: 0; text-align: center;">
+											<li>
+												<span>주소</span>
+												 $firstResult.branchVo.branch.detailAddr
+											</li>
+											<li>
+												<span>전화</span>
+												 $firstResult.branchVo.branch.tel
+											</li>
+										</ul>
+									</td>
+									<td style="width: 100px; color: #808890; background-color: #fbfcfc; border-top: 1px solid #ebedef;">
+										차량위치
+									</td>
+									<td style=" padding: 15px; border-top: 1px solid #ebedef;">
+										<strong>$lastResult.branchVo.branch.storeNm</strong>
+										<ul style="list-style: none; margin: 10px 0 0 0; padding: 0; text-align: center;">
+											<li>
+												<span>주소</span>
+												 $lastResult.branchVo.branch.detailAddr
+											</li>
+											<li>
+												<span>전화</span>
+												 $lastResult.branchVo.branch.tel
+											</li>
+										</ul>
+									</td>
+								</tr>
+							</table>
+						</td>
+					</tr>
+					<tr>
+						<td colspan="3" style="padding-top: 20px;">
+							<a href="$linkUrl">
+								<img src="$domainUrl/resources/images/mail-btn.gif" alt="" style="display: block; width: 100%;">
+							</a>
+						</td>
+					</tr>
+				</table>
+			</td>
+			<td style="width: 30px;" ></td>
+		</tr>
+		<tr>
+			<td colspan="3">
+                <table cellpadding="0" cellspacing="0" style="width: 100%; table-layout: fixed; border-spacing: 0; ">
+                    <tr>
+                        <td style="width:182px">
+                            <a href="$domainUrl" target="_blank">
+                                <img src="$domainUrl/resources/images/mail-footer-logo.jpg" alt="" style="vertical-align: top;">
+							</a>
+                        </td>
+                        <td style="padding: 20px 0;">
+                            <p style="margin: 0; font-size: 13px; color: #808890;">본 메일은 발신 전용 메일로 회신이 되지 않습니다.<br> 자세한 사항은 고객지원실로 문의바랍니다.</p>
+                            <p style="margin: 10px 0 0 0; font-size: 13px; color: #333;">
+                                <strong>폭스바겐 고객지원실</strong><br>
+                                <span>전화 : <a href="tel:0807670089" style="color: #333; text-decoration: none;">080-767-0089</a></span>
+                            </p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="2" style="padding: 10px 0; background-color: #fbfcfc; text-align: center;">
+                            <p style="font-size: 13px; color: #808890;">© <strong>Volkswagen</strong> 2018</p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+		</tr>
+	</table>
+</body>
+</html>

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<rss version="2.0"
+	xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+	xmlns:dc="http://purl.org/dc/elements/1.1/"
+	xmlns:taxo="http://purl.org/rss/1.0/modules/taxonomy/"
+	xmlns:activity="http://activitystrea.ms/spec/1.0/" >
+<channel>
+	<title>폭스바겐 공식 인증 중고차 | Volkswagen Approved</title>
+	<link>http://www.volkswagenapproved.co.kr</link>
+	
+	<image>
+		<url><![CDATA[http://s3.ap-northeast-2.amazonaws.com/vwa-static/production/20180223/BANNER/d80d7c58-b7ee-464b-833b-44f8de548cdc.jpg]]></url>
+		<title><![CDATA[폭스바겐 공식 인증 중고차]]></title>
+		<link>http://www.volkswagenapproved.co.kr</link>
+	</image>
+	
+	<description><![CDATA[누구가에겐 처음 만나는 폭스바겐이라, 또 누군가에겐 더 특별한 폭스바겐이라 폭스바겐에서 직접 시작합니다.]]></description>
+	<language>ko</language>
+	<generator>Volkswagen</generator>
+	<pubDate>Wed, 04 Apr 2018 10:48:24 +0900</pubDate>
+	
+	<item>
+		<author></author>
+		<category><![CDATA[Volkswagen Approved Main]]></category>
+		<title><![CDATA[The new Passat GT 구매]]></title>
+		<link>http://www.volkswagenapproved.co.kr</link>
+		<guid>http://www.volkswagenapproved.co.kr</guid>
+		<description><![CDATA[The new Passat GT 구매를 위해 기존 폭스바겐 차량 반납 시 100만원 지원(연식 및 주행거리 제한 없음)]]></description>
+		<pubDate>Wed, 04 Apr 2018 10:48:24 +0900</pubDate>
+		<tag><![CDATA[폭스바겐 코리아 공식 수입 중고차, 88가지 품질 기준 통과 차량 판매]]></tag>
+	</item>
+</channel>
+</rss>

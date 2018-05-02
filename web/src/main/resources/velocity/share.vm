@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+</head>
+<body style="margin:0; padding: 0;">
+<table cellpadding="0" cellspacing="0" style="max-width: 700px; border-spacing: 0; ">
+    <tr>
+        <td colspan="3">
+            <a href="$domainUrl" target="_blank">
+                <img src="$domainUrl/resources/images/mail-header.gif" alt="">
+            </a>
+        </td>
+    </tr>
+    <tr>
+        <td style="width: 30px;"></td>
+        <td>
+            <table cellpadding="0" cellspacing="0" style="width: 100%; table-layout: fixed; border-spacing: 0; ">
+                <tr>
+                    <td colspan="2">
+                        <table cellpadding="0" cellspacing="0" style="width: 100%; table-layout: fixed; border-spacing: 0; ">
+                            <tr>
+                                <td style="width:70%; padding: 25px 0 20px;">
+                                    <strong style="font-size: 27px;">$info.mak</strong>
+                                    <span style="font-size: 27px;">$info.detailModel&nbsp;#if($info.rating)$info.rating&nbsp;#end#if($info.detailRating)$info.detailRating#end</span>
+                                    <p style="margin: 0; font-size: 16px; font-weight: bold; color: #0099da;">
+                                    #foreach($list in $info.tagVos)
+                                        #if($list.tagNm)
+                                            <strong style="padding-right: 3px;">#$list.tagNm</strong>
+                                        #end
+                                    #end
+                                    </p>
+                                </td>
+                                <td style="width:30%; padding: 25px 0 20px; text-align: right; color: #0099da;">
+                                    <strong style="font-size: 35px; font-weight: bold;">$number.format("##,##0", $info.sellPrice)</strong>
+                                    <span style="font-size: 18px;">만원</span>
+                                    <p style="margin: 0; font-size: 15px;">(월 $number.format("##,##0", $info.monPayment)만원~)</p>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+
+                </tr>
+                <tr>
+                    <td colspan="2">
+                        <img src="https://$info.fileUrl" alt="" style="display: block; width: 100%;">
+                    </td>
+                </tr>
+                <tr>
+                    <td style="background-color: #f4f5f7; padding: 10px 10px 20px 20px; font-size: 15px;">
+                        <table style="width: 100%;">
+                            <tr>
+                                <td style="height: 45px; border-bottom: 1px solid #dddfe2;">
+                                    <span style="color: #808990">&middot; 연식</span>
+                                </td>
+                                <td style="height: 45px; border-bottom: 1px solid #dddfe2;">
+                                    <strong style="color: #303539;">$info.fromYear</strong>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="height: 45px; border-bottom: 1px solid #dddfe2;">
+                                    <span style="color: #808990">&middot; 연료/변속기</span>
+                                </td>
+                                <td style="height: 45px; border-bottom: 1px solid #dddfe2;">
+                                    <strong style="color: #303539;">$info.gear</strong>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="height: 45px; border-bottom: 1px solid #dddfe2;">
+                                    <span style="color: #808990">&middot; 차종</span>
+                                </td>
+                                <td style="height: 45px; border-bottom: 1px solid #dddfe2;">
+                                    <strong style="color: #303539;">$info.carType</strong>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="height: 45px; border-bottom: 1px solid #dddfe2;">
+                                    <span style="color: #808990">&middot; 배기량</span>
+                                </td>
+                                <td style="height: 45px; border-bottom: 1px solid #dddfe2;">
+                                    <strong style="color: #303539;">${carInfo.disp}cc</strong>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="height: 45px; border-bottom: 1px solid #dddfe2;">
+                                    <span style="color: #808990">&middot; 사고유무</span>
+                                </td>
+                                <td style="height: 45px; border-bottom: 1px solid #dddfe2;">
+                                    #if ( "$priceInfo.accidHisYn" == "Y" )
+                                        <strong style="color: #303539;">유</strong>
+                                    #elseif ( "$priceInfo.accidHisYn" == "N" )
+                                        <strong style="color: #303539;">무</strong>
+                                    #else
+                                        <strong style="color: #303539;">비공개</strong>
+                                    #end
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                    <td style="background-color: #f4f5f7; padding: 10px 20px 20px 10px; font-size: 15px;">
+                        <table style="width: 100%;">
+                            <tr>
+                                <td style="height: 45px; border-bottom: 1px solid #dddfe2;">
+                                    <span style="color: #808990">&middot; 주행거리</span>
+                                </td>
+                                <td style="height: 45px; border-bottom: 1px solid #dddfe2;">
+                                    <strong style="color: #303539;">$number.format("##,##0", $info.driveDist)km</strong>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="height: 45px; border-bottom: 1px solid #dddfe2;">
+                                    <span style="color: #808990">&middot; 흡연여부</span>
+                                </td>
+                                <td style="height: 45px; border-bottom: 1px solid #dddfe2;">
+                                    #if ( "$BfCarOwner.smokYn" == "Y" )
+                                        <strong style="color: #303539;">흡연</strong>
+                                    #else
+                                        <strong style="color: #303539;">비흡연</strong>
+                                    #end
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="height: 45px; border-bottom: 1px solid #dddfe2;">
+                                    <span style="color: #808990">&middot; 차량용도</span>
+                                </td>
+                                <td style="height: 45px; border-bottom: 1px solid #dddfe2;">
+                                    #if ( "$BfCarOwner.carUse" == "C" )
+                                        <strong style="color: #303539;">출퇴근</strong>
+                                    #elseif ( "$BfCarOwner.carUse" == "L" )
+                                        <strong style="color: #303539;">레저</strong>
+                                    #else
+                                        <strong style="color: #303539;">영업</strong>
+                                    #end
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="height: 45px; border-bottom: 1px solid #dddfe2;">
+                                    <span style="color: #808990">&middot; 외장/내장 색상</span>
+                                </td>
+                                <td style="height: 45px; border-bottom: 1px solid #dddfe2;">
+                                    <strong style="color: #303539;">$info.color/$info.innerColor</strong>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="height: 45px; border-bottom: 1px solid #dddfe2;">
+                                    <span style="color: #808990">&middot; 압류/저당</span>
+                                </td>
+                                <td style="height: 45px; border-bottom: 1px solid #dddfe2;">
+                                    <strong style="color: #303539;">
+                                    #if ( "$priceInfo.seize" == "Y" )
+                                        있음
+                                    #elseif ( "$priceInfo.seize" == "N" )
+                                        없음
+                                    #else
+                                        정보없음
+                                    #end
+                                    /
+                                    #if ( "$priceInfo.pled" == "Y" )
+                                        있음
+                                    #elseif ( "$priceInfo.pled" == "N" )
+                                        없음
+                                    #else
+                                        정보없음
+                                    #end
+                                    </strong>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2" style="padding-top: 20px;">
+                        <a href="$linkUrl" target="_blank">
+                            <img src="$domainUrl/resources/images/mail-btn.gif" alt="" style="display: block; width: 100%;">
+                        </a>
+                    </td>
+                </tr>
+            </table>
+        </td>
+        <td style="width: 30px;" ></td>
+    </tr>
+    <tr>
+        <td colspan="3"><img src="$domainUrl/resources/images/mail-footer-text.gif" alt=""></td>
+    </tr>
+    <tr>
+        <td colspan="3">
+            <table cellpadding="0" cellspacing="0" style="width: 100%; table-layout: fixed; border-spacing: 0; ">
+                <tr>
+                    <td style="width:182px">
+                        <a href="$domainUrl" target="_blank">
+                            <img src="$domainUrl/resources/images/mail-footer-logo.jpg" alt="" style="vertical-align: top;">
+                        </a>
+                    </td>
+                    <td style="padding: 20px 0;">
+                        <p style="margin: 0; font-size: 13px; color: #808890;">폭스바겐 인증 중고차 $branch.type $branch.storeNm</p>
+                        <p style="margin: 0; font-size: 13px; color: #808890;">
+                            <span>위치 <i style="display: inline-block; font-style: normal; font-size: 9px; vertical-align: top; margin-top: 2px; color: #d5d7d8;">|</i></span>
+                            $branch.detailAddr
+                            <span>전화 <i style="display: inline-block; font-style: normal; font-size: 9px; vertical-align: top; margin-top: 2px; color: #d5d7d8;">|</i></span>
+                            $branch.tel
+                        </p>
+                        <p style="margin: 10px 0 0 0; font-size: 13px; color: #808890;">© <strong>Volkswagen</strong> 2018</p>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
+</body>
+</html>

@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE tiles-definitions PUBLIC "-//Apache Software Foundation//DTD Tiles Configuration 3.0//EN" "http://tiles.apache.org/dtds/tiles-config_3_0.dtd">
+
+<tiles-definitions>
+    <!-- Templates -->
+    <definition name="baseLayout" template="/WEB-INF/jsp/layout/base-layout.jsp">
+        <put-attribute name="jsHeader" value="/WEB-INF/jsp/layout/jsHeader.jsp" />
+        <put-attribute name="header" value="/WEB-INF/jsp/layout/header.jsp" />
+        <put-attribute name="body" value="" />
+        <put-attribute name="footer" value="/WEB-INF/jsp/layout/footer.jsp" />
+    </definition>
+    <!-- Templates -->
+    <definition name="comparisonLayout" template="/WEB-INF/jsp/layout/comparison-layout.jsp">
+        <put-attribute name="jsHeader" value="/WEB-INF/jsp/layout/jsHeader.jsp" />
+        <put-attribute name="body" value="" />
+    </definition>
+
+    <definition name="emptyLayout" template="/WEB-INF/jsp/layout/empty-layout.jsp">
+        <put-attribute name="body" value="" />
+    </definition>
+
+    <definition name="*" extends="baseLayout">
+        <put-attribute name="body" value="/WEB-INF/jsp/view/{1}.jsp" />
+    </definition>
+
+    <definition name="layer/*" extends="emptyLayout">
+        <put-attribute name="body" value="/WEB-INF/jsp/view/layer/{1}.jsp" />
+    </definition>
+
+    <definition name="comparison/view" extends="comparisonLayout">
+        <put-attribute name="body" value="/WEB-INF/jsp/view/comparison/view.jsp" />
+    </definition>
+
+    <definition name="*/*" extends="baseLayout">
+        <put-attribute name="body" value="/WEB-INF/jsp/view/{1}/{2}.jsp" />
+    </definition>
+
+    <definition name="*/*/*" extends="baseLayout">
+        <put-attribute name="body" value="/WEB-INF/jsp/view/{1}/{2}/{3}.jsp" />
+    </definition>
+
+</tiles-definitions>
