@@ -1,0 +1,1213 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.co.vwa.repository.ItemRepository">
+
+    <!-- 차량 기본정보 저장 -->
+    <insert id="insertCarDefaultInfo">
+      INSERT INTO SELL_CAR_MODEL
+      (
+        CAR_SELL_NO
+        , MAK
+        , MODEL
+        , DETAIL_MODEL
+        , CAR_TYPE
+        , FUEL
+        , RATING
+        , DETAIL_RATING
+        , IMPO_TYPE
+        , CERT_YN
+        , PROD_YEAR
+        , FROM_YEAR
+        , DISP
+        , GEAR
+        , COLOR
+        , INNER_COLOR
+        , DRIVE_DIST
+        , HITS
+        , CRE_ADM_SEQ
+        , DB_STS
+        , CRE_USER
+        , CRE_DATE
+      ) VALUES (
+        FN_CAR_SELL_NO(DATE_FORMAT(now(), '%Y%m%d'))
+        , #{mak}
+        , #{model}
+        , #{detailModel}
+        , #{carType}
+        , #{fuel}
+        , #{rating}
+        , #{detailRating}
+        , #{impoType}
+        , COALESCE(#{certYn}, 'N')
+        , #{prodYear}
+        , #{fromYear}
+        , #{disp}
+        , #{gear}
+        , #{color}
+        , #{innerColor}
+        , #{driveDist}
+        , 0
+        , #{creAdmSeq}
+        , 'A'
+        , #{creUser}
+        , NOW()
+      )
+        <selectKey keyProperty="sellCarSeq" resultType="Long">
+            SELECT LAST_INSERT_ID()
+        </selectKey>
+    </insert>
+
+    <!-- 차량 기본정보 수정 -->
+    <update id="updateCarDefaultInfo">
+        UPDATE SELL_CAR_MODEL
+        SET
+          MAK = #{mak}
+          , MODEL = #{model}
+          , DETAIL_MODEL = #{detailModel}
+          , CAR_TYPE = #{carType}
+          , FUEL = #{fuel}
+          , RATING = #{rating}
+          , DETAIL_RATING = #{detailRating}
+          , IMPO_TYPE = #{impoType}
+          , CERT_YN = COALESCE(#{certYn}, 'N')
+          , PROD_YEAR = #{prodYear}
+          , FROM_YEAR = #{fromYear}
+          , DISP = #{disp}
+          , GEAR = #{gear}
+          , COLOR = #{color}
+          , INNER_COLOR = #{innerColor}
+          , DRIVE_DIST = #{driveDist}
+          , UPD_USER = #{updUser}
+          , UPD_DATE = NOW()
+        WHERE SELL_CAR_SEQ = #{sellCarSeq}
+    </update>
+
+    <!-- 최종 임시 저장 여부 -->
+    <select id="selectTempSaveYn" resultType="String">
+        SELECT FN_TEMP_SAVE_RESULT(#{sellCarSeq})
+    </select>
+
+    <!-- TAB 임시저장 완료 여부 -->
+    <select id="selectTabSaveYn" resultType="String">
+        SELECT FN_TEMP_SAVE_YN(#{sellCarSeq})
+    </select>
+
+    <!-- 차량 기본 정보 조회 -->
+    <select id="selectCarDefaultInfo" resultType="kr.co.vwa.domain.SellCarModelVo">
+        SELECT	A.SELL_CAR_SEQ, A.CAR_SELL_NO, A.MAK, A.MODEL, A.DETAIL_MODEL, A.CAR_TYPE, A.FUEL, A.RATING, A.DETAIL_RATING, A.IMPO_TYPE
+              , A.CERT_YN, A.PROD_YEAR, A.FROM_YEAR, A.DISP, A.GEAR, A.COLOR, A.INNER_COLOR, A.DRIVE_DIST, A.HITS, A.CRE_USER, A.CRE_DATE
+              , B.CAR_STAT_CD, B.REASON
+        FROM	SELL_CAR_MODEL A
+        LEFT JOIN CAR_SELL_STAT_HIS B
+        ON 		A.SELL_CAR_SEQ = B.SELL_CAR_SEQ
+        AND		B.DB_STS = 'A'
+        WHERE	A.SELL_CAR_SEQ = #{sellCarSeq}
+    </select>
+
+    <!-- 차량 매물 상태 이력 상태 변경 -->
+    <update id="updateCarSellStatHis">
+        UPDATE  CAR_SELL_STAT_HIS
+        SET     DB_STS = 'D'
+        WHERE   SELL_CAR_SEQ = #{sellCarSeq}
+    </update>
+
+    <!-- 차량 매물 상태 최신 이력 조회 -->
+    <select id="selectNewestCarSellStatHis" resultType="String">
+        SELECT	CAR_STAT_CD
+        FROM 	CAR_SELL_STAT_HIS
+        WHERE	DB_STS = 'A'
+        AND		SELL_CAR_SEQ = #{sellCarSeq}
+    </select>
+
+    <!-- 차량 매물 상태 이력 등록 -->
+    <insert id="insertCarSellStatHis">
+        INSERT INTO CAR_SELL_STAT_HIS
+        (
+          SELL_CAR_SEQ, CAR_STAT_CD, REASON, DB_STS, CRE_USER, CRE_DATE
+        ) VALUES (
+            #{sellCarSeq}, #{carStatCd}, #{reason}, 'A', #{creUser}, NOW()
+        )
+    </insert>
+
+    <!-- 매물기간 최신 이력 조회 -->
+    <select id="selectNewestSellDateInfo" resultType="kr.co.vwa.domain.SellDateInfoVo">
+        SELECT  SELL_DATE_SEQ
+              , SELL_CAR_SEQ
+              , CAR_STAT_CD
+        FROM    SELL_DATE_INFO
+        WHERE   DB_STS = 'A'
+        AND     SELL_CAR_SEQ = #{sellCarSeq}
+    </select>
+
+    <!-- 기존 매물기간 상태이력 변경 -->
+    <update id="updateAllSellDateInfoStat">
+        UPDATE  SELL_DATE_INFO
+        SET     DB_STS = 'D'
+        WHERE   SELL_CAR_SEQ = #{sellCarSeq}
+    </update>
+
+    <!-- 매물기간 판매중 등록 -->
+    <select id="insertSellDateInfo">
+        INSERT INTO SELL_DATE_INFO
+        (
+              SELL_CAR_SEQ
+            , CAR_STAT_CD
+            , SELL_STR_DATE
+            , DB_STS
+            , CRE_USER
+            , CRE_DATE
+        ) VALUES (
+              #{sellCarSeq}
+            , #{carStatCd}
+            , NOW()
+            , 'A'
+            , #{creUser}
+            , NOW()
+        )
+    </select>
+
+    <!-- 매물기간 판매종료/취소 변경 -->
+    <update id="updateSellDateInfo">
+        UPDATE  SELL_DATE_INFO
+        SET     CAR_STAT_CD = #{carStatCd}
+              , SELL_END_DATE = IF(STR_TO_DATE(DATE_FORMAT(NOW(), '%Y%m%d'), '%Y%m%d') = REGEXP_REPLACE('[[:punct:]]','', #{sellEndDate}), NOW(), STR_TO_DATE(CONCAT(REGEXP_REPLACE('[[:punct:]]','', #{sellEndDate}), '235959'), '%Y%m%d%H%i%s'))
+              , REASON = #{reason}
+              , UPD_USER = #{updUser}
+              , UPD_DATE = NOW()
+        WHERE   SELL_DATE_SEQ = #{sellDateSeq}
+        AND     SELL_CAR_SEQ = #{sellCarSeq}
+    </update>
+
+
+    <!-- 해당 매장의 권한 -->
+    <select id="selectUserExhHallAuth" resultType="java.lang.String">
+        SELECT  FN_USER_EXHIBITION_AUTH(#{sellCarSeq}, #{admSeq})
+    </select>
+
+<!-- ## 가격/사고 이력 ## -->
+    <resultMap id="priceHistoryMap" type="kr.co.vwa.domain.PriceTroubleHistoryVo">
+        <association property="qualityFile" column="FILE_SEQ" javaType="kr.co.vwa.domain.FileVo" select="selectFile" />
+    </resultMap>
+
+    <!-- 가격/사고이력 조회 -->
+    <select id="selectPriceHistory" resultMap="priceHistoryMap">
+        SELECT	A.SELL_CAR_SEQ, A.SELL_TYPE, A.SELL_PRICE, A.MON_PAYMENT, A.QUALITY_CHK_DAY
+			  , A.TECH_DATE, A.TECH_NM, A.SVC_ADV_DATE, A.SVC_ADV_NM, A.SVC_MNG_DATE, A.SVC_MNG_NM, A.AUTH_CAR_DATE, A.AUTH_CAR_NM
+			  , A.FILE_SEQ, A.WRT, A.WRT_PLUS, A.SEIZE, A.PLED, A.ACCID_HIS_YN, A.CRE_USER, A.CRE_DATE
+			  , CASE WHEN B.CHAS_NO IS NULL THEN '비공개'
+			         ELSE B.CHAS_NO END AS CHAS_NO
+              , CASE WHEN A.ACCID_HIS_YN = 'Y' THEN '있음'
+				     WHEN A.ACCID_HIS_YN = 'N' THEN '없음'
+                     WHEN A.ACCID_HIS_YN = 'T' THEN '비공개'
+                     ELSE '' END AS ACCID_HIS_NM
+        FROM PRICE_TROUBLE_HISTORY A
+        LEFT JOIN PERFORMANCE_CHECK B
+        ON		A.SELL_CAR_SEQ = B.SELL_CAR_SEQ
+        WHERE 	A.SELL_CAR_SEQ = #{sellCarSeq}
+    </select>
+
+    <!-- 88가지 품질 점검 정비내역서 조회 -->
+    <select id="selectQualityChkList" resultType="kr.co.vwa.domain.PriceTroubleHistoryVo">
+        SELECT	A.CD, CAST(A.OPT AS UNSIGNED) AS NO, A.CD_NM, B.CONF_YN, B.REPAIR_CTNT
+        FROM	CODE_MNG A
+        LEFT JOIN QUALITY_CHK B
+        ON		A.CD = B.CD
+        AND		B.SELL_CAR_SEQ = #{sellCarSeq}
+        WHERE	A.UPP_CD = #{uppCd}
+    </select>
+
+    <!--파일 조회-->
+    <select id="selectFile" resultType="kr.co.vwa.domain.FileVo">
+        SELECT
+            FILE_SEQ
+            , FILE_NM
+            , FILE_PATH
+            , FILE_SIZE
+            , FILE_EXT
+            , ORI_FILE_NM
+            , CRE_DATE
+            , CRE_USER
+        FROM FILE_INFO
+        WHERE FILE_SEQ = #{imgSeq}
+    </select>
+
+    <!-- 가격/사고이력 등록 -->
+    <insert id="insertPriceHistory">
+        REPLACE INTO PRICE_TROUBLE_HISTORY
+        (
+            SELL_CAR_SEQ
+          , SELL_TYPE
+          , SELL_PRICE
+          , MON_PAYMENT
+          , QUALITY_CHK_DAY
+          , TECH_DATE
+          , TECH_NM
+          , SVC_ADV_DATE
+          , SVC_ADV_NM
+          , SVC_MNG_DATE
+          , SVC_MNG_NM
+          , AUTH_CAR_DATE
+          , AUTH_CAR_NM
+          , FILE_SEQ
+          , WRT
+          , WRT_PLUS
+          , SEIZE
+          , PLED
+          , ACCID_HIS_YN
+          , DB_STS
+          , CRE_USER
+          , CRE_DATE
+        ) VALUES (
+            #{sellCarSeq}
+          , #{sellType}
+          , #{sellPrice}
+          , #{monPayment}
+          , REGEXP_REPLACE('[[:punct:]]','', #{qualityChkDay})
+          , REGEXP_REPLACE('[[:punct:]]','', #{techDate})
+          , #{techNm}
+          , REGEXP_REPLACE('[[:punct:]]','', #{svcAdvDate})
+          , #{svcAdvNm}
+          , REGEXP_REPLACE('[[:punct:]]','', #{svcMngDate})
+          , #{svcMngNm}
+          , REGEXP_REPLACE('[[:punct:]]','', #{authCarDate})
+          , #{authCarNm}
+          , #{fileSeq, jdbcType=NUMERIC}
+          , #{wrt}
+          , #{wrtPlus}
+          , #{seize}
+          , #{pled}
+          , #{accidHisYn}
+          , 'A'
+          , #{creUser}
+          , NOW()
+        )
+    </insert>
+
+    <!-- 88가지 품질 점검 정비내역서 등록 -->
+    <insert id="insertQualityChkList">
+        REPLACE INTO QUALITY_CHK
+        (
+            SELL_CAR_SEQ
+          , CD
+          , CONF_YN
+          , REPAIR_CTNT
+          , DB_STS
+          , CRE_USER
+          , CRE_DATE
+        )VALUES
+        <foreach collection="qualityList" item="item" separator=",">
+        (
+            #{sellCarSeq}
+          , #{item.cd}
+          , #{item.confYn}
+          , #{item.repairCtnt}
+          , 'A'
+          , #{creUser}
+          , NOW()
+        )
+        </foreach>
+    </insert>
+
+    <!-- 인증차량 품질보증 데이터 삭제 -->
+    <delete id="deleteSvcPlusData">
+        DELETE FROM SVC_PLUS_DATA
+        WHERE SELL_CAR_SEQ = #{sellCarSeq}
+    </delete>
+
+    <!-- 인증차량 품질보증 데이터 등록 -->
+    <insert id="insertSvcPlusData">
+        INSERT INTO SVC_PLUS_DATA
+        (
+            SELL_CAR_SEQ, CD, DETAIL_CD
+        ) VALUES
+        <foreach collection="detailCds" item="detailCd" separator=",">
+        (
+            #{sellCarSeq}, (SELECT CD FROM DETAIL_CODE_MNG WHERE DETAIL_CD = #{detailCd}), #{detailCd}
+        )
+        </foreach>
+    </insert>
+<!-- ## 가격/사고 이력 End ## -->
+
+
+<!-- ## 옵션/전차주 ## -->
+    <!-- 옵션 조회 -->
+    <select id="selectOptionMng" resultType="kr.co.vwa.domain.OptionVo">
+        SELECT	A.OPT_SEQ, A.CATEGORY_CD, A.OPT_NM, A.THUM_IMG_ON, A.THUM_IMG_OFF, A.MAJ_OPT_YN, A.EXPS_YN, A.ORD_NO, A.MAJ_ORD_NO, A.DISC,
+                CASE WHEN (B.SELL_CAR_SEQ IS NOT NULL) THEN 'checked' ELSE '' END AS checked
+        FROM 	OPTION_MNG A
+        LEFT JOIN CAR_OPT_MAP B
+        ON      A.OPT_SEQ = B.OPT_SEQ
+        AND	    B.SELL_CAR_SEQ = #{sellCarSeq}
+        WHERE	A.CATEGORY_CD = #{categoryCd}
+        AND		A.EXPS_YN = 'Y'
+        AND		A.DB_STS = 'A'
+        AND     A.VW_YN=#{vwYn}
+    </select>
+
+    <!-- 전차주정보 조회 -->
+    <select id="selectBeforeCarOwnerInfo" resultType="kr.co.vwa.domain.OptionVo">
+        SELECT	SELL_CAR_SEQ, SMOK_YN, CAR_USE
+        FROM	BEFORE_CAR_OWNER_INFO
+        WHERE	SELL_CAR_SEQ = #{sellCarSeq}
+        AND		DB_STS = 'A'
+    </select>
+
+    <!-- 차량/옵션 매핑 삭제 -->
+    <delete id="deleteCarOptMap">
+        DELETE FROM CAR_OPT_MAP
+        WHERE SELL_CAR_SEQ = #{sellCarSeq}
+    </delete>
+
+    <!-- 차량/옵션 매핑 등록 -->
+    <insert id="insertCarOptMap">
+        INSERT INTO CAR_OPT_MAP
+        (
+            SELL_CAR_SEQ, OPT_SEQ, DB_STS, CRE_USER, CRE_DATE
+        ) VALUES
+        <foreach collection="options" item="optionSeq" separator=",">
+        (
+            #{sellCarSeq}, #{optionSeq}, 'A', #{creUser}, NOW()
+        )
+        </foreach>
+    </insert>
+
+    <!-- 전차주정보 등록 -->
+    <insert id="insertBeforeCarOwnerInfo">
+        REPLACE INTO BEFORE_CAR_OWNER_INFO
+        (
+            SELL_CAR_SEQ
+          , SMOK_YN
+          , CAR_USE
+          , DB_STS
+          , CRE_USER
+          , CRE_DATE
+        ) VALUES (
+            #{sellCarSeq}
+          , #{smokYn}
+          , #{carUse}
+          , 'A'
+          , #{creUser}
+          , NOW()
+        )
+    </insert>
+<!-- ## 옵션/전차주 End ## -->
+
+
+<!-- ## 제시/성능 점검 ## -->
+    <!-- 제시/성능 점검 조회 -->
+    <select id="selectPerformanceCheck" resultType="kr.co.vwa.domain.PerformanceVo">
+        SELECT  *
+        FROM    PERFORMANCE_CHECK
+        WHERE   SELL_CAR_SEQ = #{sellCarSeq}
+        AND     DB_STS = 'A'
+    </select>
+
+    <!-- 자동차의 상태표시 조회 -->
+    <select id="selectCarStatus" resultType="kr.co.vwa.domain.CarStatusVo">
+        SELECT	A.CD, A.CD_NM, B.EXCH, B.WELD, B.CORR, CAST(A.OPT AS UNSIGNED) AS NO
+        FROM 	CODE_MNG A
+        LEFT JOIN CAR_STATUS B
+        ON 		A.CD = B.PART_CD
+        AND		B.SELL_CAR_SEQ = #{sellCarSeq}
+        WHERE	A.UPP_CD = #{uppCd} /* 'H1100'(외판), 'H1200'(주요골격) */
+        ORDER BY A.OPT ASC
+    </select>
+
+    <!-- 제시/성능 점검 등록 -->
+    <insert id="insertPerformanceCheck">
+        REPLACE INTO PERFORMANCE_CHECK
+        (
+            SELL_CAR_SEQ
+          , SUGG_NO
+          , STAT_REC_NO
+          , STR_DATE
+          , END_DATE
+          , MOTER_FROM
+          , CHAS_NO
+          , SAME_CONF
+          , ACCID_YN
+          , MOTER_DIAG_YN
+          , GEAR_DIAG_YN
+          , DAY
+          , WARR_CATEGORY
+          , ILLE_STRU_UPD_YN
+          , FLOD_YN
+          , CO
+          , HC
+          , EXH
+          , STAT_CONF_YEAR
+          , STAT_CONF_MONTH
+          , STAT_CONF_DAY
+          , STAT_CONF_USER
+          , STAT_NOTF_USER
+          , DB_STS
+          , CRE_USER
+          , CRE_DATE
+        ) VALUES (
+            #{sellCarSeq}
+          , #{suggNo}
+          , #{statRecNo}
+          , REGEXP_REPLACE('[[:punct:]]','', #{strDate})
+          , REGEXP_REPLACE('[[:punct:]]','', #{endDate})
+          , #{moterFrom}
+          , #{chasNo}
+          , #{sameConf}
+          , #{accidYn}
+          , #{moterDiagYn}
+          , #{gearDiagYn}
+          , #{day}
+          , #{warrCategory}
+          , #{illeStruUpdYn}
+          , #{flodYn}
+          , #{co}
+          , #{hc}
+          , #{exh}
+          , #{statConfYear}
+          , #{statConfMonth}
+          , #{statConfDay}
+          , #{statConfUser}
+          , #{statNotfUser}
+          , 'A'
+          , #{creUser}
+          , NOW()
+        )
+    </insert>
+
+    <!-- 자동차 상태표시 등록 -->
+    <insert id="insertCarStatus">
+        REPLACE INTO CAR_STATUS
+        (
+            SELL_CAR_SEQ
+          , PART_CD
+          , EXCH
+          , WELD
+          , CORR
+          , DB_STS
+          , CRE_USER
+          , CRE_DATE
+        ) VALUES
+        <foreach collection="carStatusVos" item="carStatusVos" separator=",">
+        (
+            #{sellCarSeq}
+          , #{carStatusVos.partCd}
+          , #{carStatusVos.exch}
+          , #{carStatusVos.weld}
+          , #{carStatusVos.corr}
+          , 'A'
+          , #{creUser}
+          , NOW()
+        )
+        </foreach>
+    </insert>
+
+    <!-- 주요장치 데이터 등록 -->
+    <insert id="insertMajorDevice">
+        REPLACE INTO MAJOR_DEVICE
+        (
+            SELL_CAR_SEQ, CD, DETAIL_CD, OPINION
+        ) VALUES
+        (
+            #{sellCarSeq}, (SELECT CD FROM DETAIL_CODE_MNG WHERE DETAIL_CD = #{detailCd}), #{detailCd}, #{opinion}
+        )
+    </insert>
+<!-- ## 제시/성능 점검 End ## -->
+
+
+<!-- ## 설명 ## -->
+    <!-- 매장정보 조회 - [VW] 슈퍼관리자 -->
+    <select id="selectExhHallVw" resultType="kr.co.vwa.domain.ExhibitionHallVo">
+		SELECT	C.EXH_HALL_SEQ, C.TYPE, C.STORE_NM, C.TEL, C.SIGUN, C.ADDR, C.DETAIL_ADDR, D.EMAIL
+        FROM 	EXHIBITION_HALL C
+        LEFT JOIN EMAIL D
+        ON 		C.EXH_HALL_SEQ = D.EXH_HALL_SEQ
+        AND		D.REPR_EMAIL_YN = 'Y'
+        WHERE	C.EXPS_YN = 'Y'
+        <if test="exhHallSeq != null">
+            AND     C.EXH_HALL_SEQ = #{exhHallSeq}
+        </if>
+        AND 	C.DB_STS = 'A'
+        ORDER BY C.EXPS_NO ASC
+    </select>
+
+    <!-- 매장정보 조회 - [Branch] 그룸관리자(admin), 그룸운영자(operator)-->
+    <select id="selectExhHallBranch" resultType="kr.co.vwa.domain.ExhibitionHallVo">
+        SELECT  *
+        FROM
+                (
+                    SELECT	C.EXH_HALL_SEQ, C.TYPE, C.STORE_NM, C.TEL, C.SIGUN, C.ADDR, C.DETAIL_ADDR, D.EMAIL, C.EXPS_NO
+                    FROM	ADMIN_MNG A
+                    LEFT JOIN ADMIN_EXHIBITION_HALL_MAP B
+                    ON 		A.ADM_SEQ = B.ADM_SEQ
+                    AND		B.DB_STS = 'A'
+                    LEFT JOIN EXHIBITION_HALL C
+                    ON		B.EXH_HALL_SEQ = C.EXH_HALL_SEQ
+                    LEFT JOIN EMAIL D
+                    ON		C.EXH_HALL_SEQ = D.EXH_HALL_SEQ
+                    AND 	D.REPR_EMAIL_YN = 'Y'
+                    WHERE	A.ADM_SEQ = #{admSeq}
+                    AND		C.EXPS_YN = 'Y'
+                    <if test="@org.apache.commons.lang3.StringUtils@isNotBlank(auth)">
+                    AND     B.AUTH = #{auth}
+                    </if>
+
+                    UNION
+
+                    SELECT	C.EXH_HALL_SEQ, C.TYPE, C.STORE_NM, C.TEL, C.SIGUN, C.ADDR, C.DETAIL_ADDR,  D.EMAIL, C.EXPS_NO
+                    FROM	DISCRIPTION A
+                    LEFT JOIN ADMIN_EXHIBITION_HALL_MAP B
+                    ON		A.EXH_HALL_SEQ = B.EXH_HALL_SEQ
+                    LEFT JOIN EXHIBITION_HALL C
+                    ON 		B.EXH_HALL_SEQ = C.EXH_HALL_SEQ
+                    LEFT JOIN EMAIL D
+                    ON		C.EXH_HALL_SEQ = D.EXH_HALL_SEQ
+                    AND 	D.REPR_EMAIL_YN = 'Y'
+                    WHERE 	SELL_CAR_SEQ = #{sellCarSeq, jdbcType=BIGINT}
+                    AND		B.ADM_SEQ = #{admSeq}
+                ) T
+        WHERE   1 = 1
+        <if test="exhHallSeq != null">
+            AND     EXH_HALL_SEQ = #{exhHallSeq}
+        </if>
+        ORDER BY EXPS_NO ASC
+    </select>
+
+    <!-- 태그 조회 -->
+    <select id="selectTagMng" resultType="kr.co.vwa.domain.TagVo">
+        SELECT	A.TAG_SEQ, A.TAG_NM, A.ORD_NO
+              , (CASE WHEN B.TAG_SEQ IS NOT NULL THEN 'checked' ELSE '' END) AS CHECKED
+        FROM	TAG_MNG A
+        LEFT JOIN CAR_TAG_MAP B
+        ON 		A.TAG_SEQ = B.TAG_SEQ
+        AND		B.SELL_CAR_SEQ = #{sellCarSeq}
+        AND		B.DB_STS = 'A'
+        WHERE	A.DB_STS = 'A'
+        AND		EXPS_YN ='Y'
+    </select>
+
+    <!-- 설명글 조회 -->
+    <select id="selectDiscription" resultType="kr.co.vwa.domain.DiscriptionVo">
+        SELECT	SELL_CAR_SEQ, EXH_HALL_SEQ, SELL_DISC, DISC_TYPE, DISC_WRIT
+        FROM	DISCRIPTION
+        WHERE	DB_STS = 'A'
+        AND     SELL_CAR_SEQ = #{sellCarSeq}
+    </select>
+    
+    <!-- 내 설명글 관리 조회 -->
+    <select id="selectMyDiscMng" resultType="kr.co.vwa.domain.MyDiscMngVo">
+        SELECT	DISC_SEQ, DISC_NM, DISC_CTNT
+        FROM	MY_DISC_MNG
+        WHERE	ADM_SEQ = #{admSeq}
+        AND		DB_STS= 'A'
+        <if test="discSeq != null">
+            AND   DISC_SEQ = #{discSeq}
+        </if>
+    </select>
+
+    <!-- 차량 태그 매핑 삭제 -->
+    <delete id="deleteCarTagMap">
+        DELETE FROM CAR_TAG_MAP
+        WHERE SELL_CAR_SEQ = #{sellCarSeq}
+    </delete>
+
+    <!-- 차량 태그 매핑 등록 -->
+    <insert id="insertCarTagMap">
+        INSERT INTO CAR_TAG_MAP
+        (
+            SELL_CAR_SEQ
+          , TAG_SEQ
+          , DB_STS
+          , CRE_USER
+          , CRE_DATE
+        ) VALUES
+        <foreach collection="tagSeqs" item="tagSeq" separator=",">
+        (
+            #{sellCarSeq}
+          , #{tagSeq}
+          , 'A'
+          , #{creUser}
+          , NOW()
+        )
+        </foreach>
+    </insert>
+
+    <!-- 설명 삭제 -->
+    <delete id="deleteDiscription">
+        DELETE FROM DISCRIPTION
+        WHERE SELL_CAR_SEQ = #{sellCarSeq}
+    </delete>
+    
+    <!-- 설명 등록 -->
+    <insert id="insertDiscription">
+        INSERT INTO DISCRIPTION
+        (
+            SELL_CAR_SEQ
+          , EXH_HALL_SEQ
+          , SELL_DISC
+          , DISC_TYPE
+          , DISC_WRIT
+          , DB_STS
+          , CRE_USER
+          , CRE_DATE
+        ) VALUES (
+            #{sellCarSeq}
+          , #{exhHallSeq}
+          , #{sellDisc}
+          , #{discType}
+          , #{discWrit}
+          , 'A'
+          , #{creUser}
+          , NOW()
+        )
+    </insert>
+<!-- ## 설명 End ## -->
+
+<!-- ## 사진 ## -->
+    <!-- 차량사진조회 -->
+    <select id="selectCarPhoto" resultType="kr.co.vwa.domain.CarPhotoVo">
+        SELECT  A.CD
+              , A.CD_NM AS TITLE
+              , IF(A.OPT = 'Y', 'true', 'false') AS REQUIRED
+              , CONCAT(#{fileUrlPath}, REPLACE(C.FILE_PATH, '/PHOTO/', '/PHOTO/thumbnail/'), C.FILE_NM) AS FILE_URL
+              , B.IMG_SEQ
+        FROM	CODE_MNG A
+        LEFT JOIN CAR_PHOTO B
+        ON 		A.CD = B.PHOTO_CD
+        AND		B.SELL_CAR_SEQ = #{sellCarSeq}
+        AND		B.DB_STS = 'A'
+        LEFT JOIN FILE_INFO C
+        ON		B.IMG_SEQ = C.FILE_SEQ
+        WHERE	A.UPP_CD = 'C1000'
+    </select>
+
+    <!-- 차량사진 삭제 -->
+    <delete id="deleteCarPhoto">
+        DELETE FROM CAR_PHOTO
+        WHERE SELL_CAR_SEQ = #{sellCarSeq}
+    </delete>
+
+    <!-- 차량사진 등록 -->
+    <insert id="insertCarPhoto">
+        INSERT INTO CAR_PHOTO
+        (   SELL_CAR_SEQ
+          , PHOTO_CD
+          , IMG_SEQ
+          , DB_STS
+          , CRE_USER
+          , CRE_DATE
+        ) VALUES
+        <foreach collection="carPhotoVos" item="item" separator=",">
+        (
+            #{sellCarSeq}
+          , #{item.photoCd}
+          , #{item.imgSeq}
+          , 'A'
+          , #{creUser}
+          , NOW()
+        )
+        </foreach>
+    </insert>
+<!-- ## 사진 End ## -->
+
+
+<!-- ## 판매관리 ## -->
+    <!-- 판매관리 조회 -->
+    <select id="selectSellMng" resultType="kr.co.vwa.domain.SellMngVo">
+        SELECT	A.SELL_CAR_SEQ
+              , A.HITS
+              , B.SELL_STAT
+              , B.STAT_DATE
+              , B.REASON
+              , C.CAR_STAT_CD
+              , (SELECT CD_NM FROM CODE_MNG WHERE CD = C.CAR_STAT_CD) AS CD_NM
+              , IF(C.CAR_STAT_CD = 'D1002', 'Y', 'N') AS VIEW_YN
+        FROM	SELL_CAR_MODEL A
+        LEFT JOIN SELL_MNG B
+        ON		A.SELL_CAR_SEQ = B.SELL_CAR_SEQ
+        LEFT JOIN CAR_SELL_STAT_HIS C
+        ON		A.SELL_CAR_SEQ = C.SELL_CAR_SEQ
+        AND		C.DB_STS = 'A'
+        WHERE	A.SELL_CAR_SEQ = #{sellCarSeq}
+    </select>
+
+    <!-- 판매기간 조회 -->
+    <select id="selectSellDateInfo" resultType="kr.co.vwa.domain.SellMngVo">
+        SELECT	SELL_CAR_SEQ
+              , CONCAT(DATE_FORMAT(SELL_STR_DATE, '%Y.%m.%d %H:%i'), '~', DATE_FORMAT(IFNULL(SELL_END_DATE, NOW()), '%Y.%m.%d %H:%i')) AS SELL_TIME
+              , DATEDIFF(IFNULL(SELL_END_DATE, NOW()), SELL_STR_DATE) AS STOCK_TIME
+        FROM	SELL_DATE_INFO
+        WHERE	SELL_CAR_SEQ = #{sellCarSeq}
+    </select>
+
+    <!-- 판매관리 등록 -->
+    <insert id="insertSellMng">
+        REPLACE INTO SELL_MNG
+        (
+            SELL_CAR_SEQ
+          , SELL_STAT
+          , STAT_DATE
+          , REASON
+          , DB_STS
+          , CRE_USER
+          , CRE_DATE
+        ) VALUES (
+            #{sellCarSeq}
+          , #{sellStat}
+          , REGEXP_REPLACE('[[:punct:]]','', #{statDate})
+          , #{reason}
+          , 'A'
+          , #{creUser}
+          , NOW()
+        )
+    </insert>
+
+    <!-- 판매관리 삭제 -->
+    <delete id="deleteSellMng">
+        DELETE FROM SELL_MNG
+        WHERE SELL_CAR_SEQ = #{sellCarSeq}
+    </delete>
+<!-- ## 판매관리 End ## -->
+
+    <!-- 매물관리 리스트 - 전시장 구분 조회 -->
+    <select id="selectItemExhType" resultType="kr.co.vwa.domain.ItemVo">
+        <choose>
+            <when test="authType == 'VW'">
+                SELECT	TYPE
+                      , CASE WHEN TYPE = 'Klasse Auto' THEN 'KA'
+                             WHEN TYPE = 'Meister Motors' THEN 'MM'
+                             WHEN TYPE = 'Ucaro Automobile' THEN 'UA'
+                             WHEN TYPE = 'GioHaus' THEN 'GH'
+                             WHEN TYPE = <![CDATA[ 'G&amp;B Automobilee' ]]> THEN 'GA' END HALL_TYPE
+                FROM
+                        (
+                            SELECT	EXH_HALL_SEQ, STORE_NM, TYPE
+                            FROM 	EXHIBITION_HALL
+                            WHERE 	DB_STS = 'A'
+                            AND		EXPS_YN = 'Y'
+
+                            UNION
+
+                            SELECT	C.EXH_HALL_SEQ, C.STORE_NM, TYPE
+                            FROM	SELL_CAR_MODEL A
+                            INNER JOIN DISCRIPTION B
+                            ON		A.SELL_CAR_SEQ = B.SELL_CAR_SEQ
+                            INNER JOIN EXHIBITION_HALL C
+                            ON		B.EXH_HALL_SEQ = C.EXH_HALL_SEQ
+                            GROUP BY C.EXH_HALL_SEQ, C.STORE_NM
+                        ) T
+                GROUP BY TYPE
+            </when>
+            <otherwise>
+                SELECT	TYPE
+                      , CASE WHEN TYPE = 'Klasse Auto' THEN 'KA'
+                             WHEN TYPE = 'Meister Motors' THEN 'MM'
+                             WHEN TYPE = 'Ucaro Automobile' THEN 'UA'
+                             WHEN TYPE = 'GioHaus' THEN 'GH'
+                             WHEN TYPE = <![CDATA[ 'G&amp;B Automobilee' ]]> THEN 'GA' END AS HALL_TYPE
+                FROM
+                        (
+                            SELECT	C.EXH_HALL_SEQ, C.TYPE, C.STORE_NM, C.TEL, C.SIGUN, C.ADDR, C.DETAIL_ADDR
+                            FROM	ADMIN_MNG A
+                            LEFT JOIN ADMIN_EXHIBITION_HALL_MAP B
+                            ON 		A.ADM_SEQ = B.ADM_SEQ
+                            AND		B.DB_STS = 'A'
+                            LEFT JOIN EXHIBITION_HALL C
+                            ON		B.EXH_HALL_SEQ = C.EXH_HALL_SEQ
+                            WHERE	A.ADM_SEQ = ${admSeq}
+                            AND		C.EXPS_YN = 'Y'
+
+                            UNION
+
+                            <!-- 본인이 등록한 전시장 정보 -->
+                            SELECT	C.EXH_HALL_SEQ, C.TYPE, C.STORE_NM, C.TEL, C.SIGUN, C.ADDR, C.DETAIL_ADDR
+                            FROM  	SELL_CAR_MODEL A
+                            LEFT JOIN DISCRIPTION B
+                            ON 		A.SELL_CAR_SEQ = B.SELL_CAR_SEQ
+                            LEFT JOIN EXHIBITION_HALL C
+                            ON		B.EXH_HALL_SEQ = C.EXH_HALL_SEQ
+                            WHERE 	A.CRE_ADM_SEQ = ${admSeq}
+                        ) T
+                GROUP BY TYPE
+            </otherwise>
+        </choose>
+
+    </select>
+
+    <!-- 매물관리 리스트 - 전시장조회  -->
+    <select id="selectItemExhHall" resultType="kr.co.vwa.domain.ItemVo">
+        <choose>
+            <when test="authType == 'VW'">
+                SELECT	EXH_HALL_SEQ, STORE_NM
+                FROM 	EXHIBITION_HALL
+                WHERE 	DB_STS = 'A'
+                AND		EXPS_YN = 'Y'
+
+                UNION
+
+                <!-- 매물등록된 전시장 정보 -->
+                SELECT	C.EXH_HALL_SEQ, C.STORE_NM
+                FROM	SELL_CAR_MODEL A
+                INNER JOIN DISCRIPTION B
+                ON		A.SELL_CAR_SEQ = B.SELL_CAR_SEQ
+                INNER JOIN EXHIBITION_HALL C
+                ON		B.EXH_HALL_SEQ = C.EXH_HALL_SEQ
+                GROUP BY C.EXH_HALL_SEQ, C.STORE_NM
+            </when>
+            <otherwise>
+                SELECT	C.EXH_HALL_SEQ, C.TYPE, C.STORE_NM, C.TEL, C.SIGUN, C.ADDR, C.DETAIL_ADDR
+                FROM	ADMIN_MNG A
+                LEFT JOIN ADMIN_EXHIBITION_HALL_MAP B
+                ON 		A.ADM_SEQ = B.ADM_SEQ
+                AND		B.DB_STS = 'A'
+                LEFT JOIN EXHIBITION_HALL C
+                ON		B.EXH_HALL_SEQ = C.EXH_HALL_SEQ
+                WHERE	A.ADM_SEQ = #{admSeq}
+                AND		C.EXPS_YN = 'Y'
+
+                UNION
+
+                <!-- 본인이 등록한 전시장 정보 -->
+                SELECT	C.EXH_HALL_SEQ, C.TYPE, C.STORE_NM, C.TEL, C.SIGUN, C.ADDR, C.DETAIL_ADDR
+                FROM  	SELL_CAR_MODEL A
+                LEFT JOIN DISCRIPTION B
+                ON 		A.SELL_CAR_SEQ = B.SELL_CAR_SEQ
+                LEFT JOIN EXHIBITION_HALL C
+                ON		B.EXH_HALL_SEQ = C.EXH_HALL_SEQ
+                WHERE 	A.CRE_ADM_SEQ = #{admSeq}
+            </otherwise>
+        </choose>
+    </select>
+
+    <!-- 매물관리 리스트 - 등록자 조회 -->
+    <select id="selectItemCreUser" resultType="kr.co.vwa.domain.ItemVo">
+        <choose>
+            <when test="authType == 'VW'">
+                SELECT 	A.ADM_SEQ, A.ID AS CRE_USER
+                FROM  	ADMIN_MNG A
+                INNER JOIN ADMIN_EXHIBITION_HALL_MAP B
+                ON		A.ADM_SEQ = B.ADM_SEQ
+                AND 	B.DB_STS = 'A'
+                WHERE 	A.DB_STS = 'A'
+                GROUP BY A.ADM_SEQ, A.ID
+
+                UNION
+
+                SELECT	CRE_ADM_SEQ, CRE_USER
+                FROM	SELL_CAR_MODEL
+                GROUP BY CRE_ADM_SEQ, CRE_USER
+            </when>
+            <otherwise>
+                SELECT	A.CRE_ADM_SEQ, A.CRE_USER
+                FROM
+                        (
+                            SELECT	A.SELL_CAR_SEQ, A.CRE_ADM_SEQ, B.EXH_HALL_SEQ, B.AUTH, A.CRE_USER
+                            FROM
+                                    (
+                                        SELECT	A.SELL_CAR_SEQ, B.EXH_HALL_SEQ, A.CRE_ADM_SEQ, A.CRE_USER
+                                        FROM	SELL_CAR_MODEL A
+                                        INNER JOIN DISCRIPTION B
+                                        ON		A.SELL_CAR_SEQ = B.SELL_CAR_SEQ
+                                    ) A
+                            INNER JOIN
+                                      (
+                                        SELECT	A.ADM_SEQ, A.EXH_HALL_SEQ, A.AUTH
+                                        FROM	ADMIN_EXHIBITION_HALL_MAP A
+                                        INNER JOIN ADMIN_MNG B
+                                        ON		A.ADM_SEQ = B.ADM_SEQ
+                                        AND     B.DB_STS = 'A'
+                                        INNER JOIN EXHIBITION_HALL C
+                                        ON		A.EXH_HALL_SEQ = C.EXH_HALL_SEQ
+                                        WHERE	A.DB_STS = 'A'
+                                      ) B
+                            ON		A.EXH_HALL_SEQ = B.EXH_HALL_SEQ
+                        ) A
+                INNER JOIN
+                        (
+
+
+                            SELECT	A.ADM_SEQ, A.EXH_HALL_SEQ, A.AUTH, C.TYPE, B.ID, C.STORE_NM
+                                  , CASE WHEN A.AUTH = 'ADMIN' THEN 1
+                                         WHEN A.AUTH = 'OPERATOR' THEN 2
+                                         ELSE NULL END AS AUTH_CD
+                            FROM	ADMIN_EXHIBITION_HALL_MAP A
+                            INNER JOIN ADMIN_MNG B
+                            ON		A.ADM_SEQ = B.ADM_SEQ
+                            AND 	B.ADM_SEQ = #{admSeq}
+                            INNER JOIN EXHIBITION_HALL C
+                            ON		A.EXH_HALL_SEQ = C.EXH_HALL_SEQ
+                            WHERE	A.DB_STS = 'A'
+                        ) B
+                ON		A.EXH_HALL_SEQ = B.EXH_HALL_SEQ
+                GROUP  BY A.CRE_ADM_SEQ, A.CRE_USER
+
+                UNION
+
+                SELECT	CRE_ADM_SEQ, CRE_USER
+                FROM	SELL_CAR_MODEL
+                WHERE 	CRE_ADM_SEQ = #{admSeq}
+            </otherwise>
+        </choose>
+    </select>
+
+    <!-- 매물 등록 가능 여부 -->
+    <select id="selectSellRegisterYn" resultType="java.lang.String">
+        SELECT	IF(COUNT(*) > 0, 'Y', 'N')
+        FROM  	ADMIN_EXHIBITION_HALL_MAP
+        WHERE 	ADM_SEQ = #{admSeq}
+        AND 	DB_STS = 'A'
+        AND		AUTH = 'OPERATOR'
+    </select>
+
+
+    <!-- 매물관리 리스트 sql -->
+    <sql id="sqlItemList">
+        SELECT  SELL_CAR_SEQ, CAR_SELL_NO, MAK, MODEL
+              , DATE_FORMAT(CONCAT(PROD_YEAR, '01'), '%Y.%m') AS PROD_YEAR
+              , FROM_YEAR, CERT_YN AS VWA, CRE_USER
+              , IF(CAR_STAT_CD IN ('D1002', 'D1004', 'D1005'), HITS, '') AS HITS
+              , CRE_ADM_SEQ
+              , SELL_PRICE, CAR_STAT_CD, CD_NM, HALL_TYPE, TYPE , STORE_NM, EXH_HALL_SEQ, SELL_TIME, STOCK_TIME
+              , SELL_STR_DATE, SELL_END_DATE, FILE_URL
+        FROM
+            (
+                SELECT	A.SELL_CAR_SEQ, A.CAR_SELL_NO, A.MAK, A.MODEL, A.PROD_YEAR, A.FROM_YEAR, A.CERT_YN
+                      , A.CRE_USER, A.HITS, A.CRE_ADM_SEQ
+                      , B.SELL_PRICE
+                      , IF(C.CAR_STAT_CD IS NULL , 'D1006', C.CAR_STAT_CD) AS CAR_STAT_CD
+                      , IF(C.CAR_STAT_CD IS NULL , '임시저장', C.CD_NM) AS CD_NM
+                      , CASE WHEN D.TYPE = 'Klasse Auto' THEN 'KA'
+                             WHEN D.TYPE = 'Meister Motors' THEN 'MM'
+                             WHEN D.TYPE = 'Ucaro Automobile' THEN 'UA'
+                             WHEN D.TYPE = 'GioHaus' THEN 'GH'
+                             WHEN D.TYPE = <![CDATA[ 'G&amp;B Automobilee' ]]> THEN 'GA' ELSE '' END AS HALL_TYPE
+                      , D.TYPE
+                      , D.STORE_NM
+                      , D.EXH_HALL_SEQ
+                      , E.SELL_TIME, E.STOCK_TIME, E.SELL_STR_DATE, E.SELL_END_DATE
+                      , CONCAT(#{fileUrlPath}, REPLACE(G.FILE_PATH, '/PHOTO/', '/PHOTO/thumbnail/'), G.FILE_NM) AS FILE_URL
+                FROM
+                  <if test="authType == 'VW'">
+                        SELL_CAR_MODEL A
+                  </if>
+                  <if test="authType != 'VW'">
+                        (
+                            SELECT	A.SELL_CAR_SEQ, A.CAR_SELL_NO, A.MAK, A.MODEL, A.PROD_YEAR, A.FROM_YEAR, A.CRE_USER, A.HITS, A.CRE_ADM_SEQ, A.CERT_YN
+                            FROM
+                                    (
+                                        SELECT	A.SELL_CAR_SEQ
+                                                , A.CRE_ADM_SEQ
+                                                , B.EXH_HALL_SEQ, B.AUTH
+                                                , CASE WHEN B.AUTH = 'ADMIN' THEN 1
+                                                WHEN B.AUTH = 'OPERATOR' THEN 2
+                                                ELSE NULL END AS CRE_AUTH_CD
+                                                , A.CAR_SELL_NO, A.MAK, A.MODEL, A.PROD_YEAR, A.FROM_YEAR
+                                                , A.CRE_USER, A.HITS, A.CERT_YN
+
+                                        FROM	SELL_CAR_MODEL A
+                                        INNER JOIN
+                                                (
+
+                                                    SELECT	A.SELL_CAR_SEQ, A.CRE_ADM_SEQ, B.EXH_HALL_SEQ, B.AUTH
+                                                    FROM
+                                                            (
+                                                                SELECT	A.SELL_CAR_SEQ, B.EXH_HALL_SEQ, A.CRE_ADM_SEQ
+                                                                FROM	SELL_CAR_MODEL A
+                                                                INNER JOIN DISCRIPTION B
+                                                                ON		A.SELL_CAR_SEQ = B.SELL_CAR_SEQ
+                                                            ) A
+                                                    INNER JOIN
+                                                            (
+                                                                SELECT	A.ADM_SEQ, A.EXH_HALL_SEQ, A.AUTH
+                                                                FROM	ADMIN_EXHIBITION_HALL_MAP A
+                                                                INNER JOIN ADMIN_MNG B
+                                                                ON		A.ADM_SEQ = B.ADM_SEQ
+                                                                AND     B.DB_STS = 'A'
+                                                                INNER JOIN EXHIBITION_HALL C
+                                                                ON		A.EXH_HALL_SEQ = C.EXH_HALL_SEQ
+                                                                WHERE	A.DB_STS = 'A'
+                                                            ) B
+                                                    ON		A.EXH_HALL_SEQ = B.EXH_HALL_SEQ
+                                                ) B
+                                        ON		A.SELL_CAR_SEQ = B.SELL_CAR_SEQ
+                                        AND		A.CRE_ADM_SEQ = B.CRE_ADM_SEQ
+                                        WHERE	1 = 1
+                                    ) A
+                            INNER JOIN
+                                    (
+                                        SELECT	A.ADM_SEQ, A.EXH_HALL_SEQ, A.AUTH, C.TYPE, B.ID, C.STORE_NM
+                                                , CASE WHEN A.AUTH = 'ADMIN' THEN 1
+                                                       WHEN A.AUTH = 'OPERATOR' THEN 2
+                                                       ELSE NULL END AS AUTH_CD
+                                        FROM	ADMIN_EXHIBITION_HALL_MAP A
+                                        INNER JOIN ADMIN_MNG B
+                                        ON		A.ADM_SEQ = B.ADM_SEQ
+                                        AND 	    B.ADM_SEQ = #{admSeq}
+                                        INNER JOIN EXHIBITION_HALL C
+                                        ON		A.EXH_HALL_SEQ = C.EXH_HALL_SEQ
+                                        WHERE	A.DB_STS = 'A'
+                                    ) B
+                            ON 		A.EXH_HALL_SEQ = B.EXH_HALL_SEQ
+                            /*AND 	    A.CRE_AUTH_CD  <![CDATA[ >= ]]>  B.AUTH_CD*/
+
+                            UNION
+
+                            SELECT	SELL_CAR_SEQ, CAR_SELL_NO, MAK, MODEL, PROD_YEAR, FROM_YEAR, CRE_USER, HITS, CRE_ADM_SEQ, CERT_YN
+                            FROM	SELL_CAR_MODEL
+                            WHERE 	CRE_ADM_SEQ = #{admSeq}
+                        ) A
+                  </if>
+                LEFT JOIN 	PRICE_TROUBLE_HISTORY B
+                ON		A.SELL_CAR_SEQ = B.SELL_CAR_SEQ
+                LEFT JOIN
+                        (
+                            SELECT A.SELL_CAR_SEQ, A.CAR_STAT_CD, B.CD_NM
+                            FROM CAR_SELL_STAT_HIS A
+                            INNER JOIN CODE_MNG B
+                            ON A.CAR_STAT_CD = B.CD
+                            WHERE A.DB_STS = 'A'
+                        ) C
+                ON 		A.SELL_CAR_SEQ = C.SELL_CAR_SEQ
+                LEFT JOIN
+                        (
+                            SELECT	A.SELL_CAR_SEQ, B.TYPE, B.STORE_NM, B.EXH_HALL_SEQ
+                            FROM	DISCRIPTION A
+                            INNER JOIN EXHIBITION_HALL B
+                            ON		A.EXH_HALL_SEQ = B.EXH_HALL_SEQ
+                            WHERE	A.DB_STS = 'A'
+                        ) D
+                ON		A.SELL_CAR_SEQ = D.SELL_CAR_SEQ
+                LEFT JOIN
+                        (
+                            SELECT	SELL_CAR_SEQ
+                                  , SELL_DATE_SEQ
+                                  , CAR_STAT_CD
+                                  , DATE_FORMAT(SELL_STR_DATE, '%Y%m%d%H%i') AS SELL_STR_DATE
+                                  , DATE_FORMAT(SELL_END_DATE, '%Y%m%d%H%i') AS SELL_END_DATE
+                                  , CONCAT(DATE_FORMAT(SELL_STR_DATE, '%Y.%m.%d %H:%i'), ' ~ ', IF(SELL_END_DATE IS NULL, '', DATE_FORMAT(SELL_END_DATE, '%Y.%m.%d %H:%i'))) AS SELL_TIME
+                                  , DATEDIFF(IFNULL(SELL_END_DATE, NOW()), SELL_STR_DATE) AS STOCK_TIME
+                            FROM    SELL_DATE_INFO
+                            WHERE	DB_STS = 'A'
+                        ) E
+                ON		A.SELL_CAR_SEQ = E.SELL_CAR_SEQ
+                LEFT JOIN 	CAR_PHOTO F
+                ON		A.SELL_CAR_SEQ = F.SELL_CAR_SEQ
+                AND		F.PHOTO_CD = 'C1001'
+                AND		F.DB_STS = 'A'
+                LEFT JOIN FILE_INFO G
+                ON		F.IMG_SEQ = G.FILE_SEQ
+        ) T
+        WHERE   1 = 1
+        <if test="!@org.springframework.util.CollectionUtils@isEmpty(carStatCds)">
+            AND   CAR_STAT_CD IN
+                <foreach collection="carStatCds" item="carStatCd" separator="," open="(" close=")">
+                    #{carStatCd}
+                </foreach>
+        </if>
+        <if test="@org.springframework.util.CollectionUtils@isEmpty(carStatCds)">
+            AND   CAR_STAT_CD IN ('')
+        </if>
+        <if test="@org.apache.commons.lang3.StringUtils@isNotBlank(hallType)">
+            AND   HALL_TYPE = #{hallType}
+        </if>
+        <if test="exhHallSeq != null">
+            AND   EXH_HALL_SEQ = #{exhHallSeq}
+        </if>
+        <if test="creAdmSeq != null">
+            AND   CRE_ADM_SEQ = #{creAdmSeq}
+        </if>
+        <if test="@org.apache.commons.lang3.StringUtils@isNotBlank(sellStrDate) and @org.apache.commons.lang3.StringUtils@isBlank(sellEndDate)">
+            AND   REGEXP_REPLACE('[[:punct:]]','', #{sellStrDate}) <![CDATA[ <= ]]> SELL_STR_DATE
+        </if>
+        <if test="@org.apache.commons.lang3.StringUtils@isBlank(sellStrDate) and @org.apache.commons.lang3.StringUtils@isNotBlank(sellEndDate)">
+            AND   REGEXP_REPLACE('[[:punct:]]','', #{sellEndDate}) <![CDATA[ >= ]]> SELL_END_DATE
+        </if>
+        <if test="@org.apache.commons.lang3.StringUtils@isNotBlank(sellStrDate) and @org.apache.commons.lang3.StringUtils@isNotBlank(sellEndDate)">
+            AND   (REGEXP_REPLACE('[[:punct:]]','', #{sellStrDate}) <![CDATA[ <= ]]> SELL_STR_DATE OR
+                   REGEXP_REPLACE('[[:punct:]]','', #{sellEndDate}) <![CDATA[ >= ]]> SELL_END_DATE)
+        </if>
+        <if test="@org.apache.commons.lang3.StringUtils@isNotBlank(searchWord)">
+            AND   (MAK LIKE CONCAT('%', #{searchWord}, '%') OR MODEL LIKE CONCAT('%', #{searchWord}, '%'))
+        </if>
+        ORDER BY ${orderColumn} ${orderType}
+    </sql>
+
+
+    <!-- 매물관리 리스트 조회 -->
+    <select id="selectItemListCount" resultType="java.lang.Integer">
+        SELECT  COUNT(*)
+        FROM    (
+          <include refid="sqlItemList" />
+        ) T
+    </select>
+
+    <!-- 매물관리 리스트 조회 -->
+    <select id="selectItemList" resultType="kr.co.vwa.domain.ItemVo">
+        <include refid="sqlItemList" />
+        LIMIT #{contentsCount} OFFSET #{currentPage}
+    </select>
+
+    <!-- 매물관리 리스트 조회 (Excel) -->
+    <select id="selectItemListExcel" resultType="kr.co.vwa.domain.ItemVo">
+        <include refid="sqlItemList" />
+    </select>
+
+    <!-- 매물관리 이력보기 -->
+    <select id="selectSellStatHis" resultType="kr.co.vwa.domain.ItemVo">
+        SELECT	IF(D.AUTH IS NULL, FN_USER_AUTH(C.ADM_SEQ), D.AUTH) AS AUTH_TYPE, A.CRE_USER, DATE_FORMAT(A.CRE_DATE, '%Y.%m.%d %H:%i') AS CRE_DATE
+              , IF(A.CAR_STAT_CD = 'D1004' OR A.CAR_STAT_CD = 'D1005', '판매관리', '차량등록') AS CAR_STAT_MNU
+              , B.CD_NM
+              , IF(A.DB_STS = 'A', '노출', '비노출') AS DISP
+              , A.CAR_STAT_CD, C.ADM_SEQ
+        FROM	CAR_SELL_STAT_HIS A
+        LEFT JOIN CODE_MNG B
+        ON 		A.CAR_STAT_CD = B.CD
+        LEFT JOIN ADMIN_MNG C
+        ON 		A.CRE_USER = C.ID
+        LEFT JOIN ADMIN_EXHIBITION_HALL_MAP D
+        ON		C.ADM_SEQ = D.ADM_SEQ
+        AND 	D.EXH_HALL_SEQ = #{exhHallSeq}
+        LEFT JOIN EXHIBITION_HALL E
+        ON 		D.EXH_HALL_SEQ = E.EXH_HALL_SEQ
+        WHERE 	A.SELL_CAR_SEQ = #{sellCarSeq}
+        ORDER BY A.CRE_DATE DESC
+    </select>
+
+    <!-- 매물관리 - 내 설명글 등록 -->
+    <insert id="insertMyDiscMng">
+        INSERT INTO MY_DISC_MNG
+        (
+            ADM_SEQ
+          , DISC_NM
+          , DISC_CTNT
+          , DB_STS
+          , CRE_USER
+          , CRE_DATE
+        ) VALUES (
+            #{admSeq}
+          , FN_MY_DISC_NM(#{admSeq}, #{discNm})
+          , #{discCtnt}
+          , 'A'
+          , #{creUser}
+          , NOW()
+        )
+    </insert>
+
+    <!-- 매물관리 - 내 설명글 수정 -->
+    <update id="updateMyDiscMng">
+        UPDATE  MY_DISC_MNG
+        SET     DISC_NM = #{discNm}
+              , DISC_CTNT = #{discCtnt}
+              , UPD_USER = #{updUser}
+              , UPD_DATE = NOW()
+        WHERE   DISC_SEQ = #{discSeq}
+    </update>
+
+    <!-- 매물관리 - 내 설명글 삭제 -->
+    <delete id="deleteMyDiscMng">
+        DELETE FROM MY_DISC_MNG
+        WHERE DISC_SEQ = #{discSeq}
+    </delete>
+
+
+
+
+</mapper>

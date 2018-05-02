@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.co.vwa.repository.TagRepository">
+
+    <!--태그관리/목록 등록-->
+    <insert id="registeTagMng" parameterType="kr.co.vwa.domain.TagVo">
+        INSERT INTO TAG_MNG (
+            TAG_NM
+            ,EXPS_YN
+            ,ORD_NO
+            ,DB_STS
+            ,CRE_USER
+            ,CRE_DATE
+            ,UPD_USER
+            ,UPD_DATE
+        )
+        SELECT
+            #{tagNm}
+            ,#{expsYn}
+            , COUNT(ORD_NO)+1
+            ,'A'
+            ,#{updUser}
+            ,NOW()
+            ,#{updUser}
+            ,NOW()
+        FROM TAG_MNG
+    </insert>
+
+    <!--태그관리/목록 조회-->
+    <select id="tagMngList" parameterType="map" resultType="kr.co.vwa.domain.TagVo">
+        SELECT TAG_SEQ TAGSEQ,
+                TAG_NM TAGNM,
+                EXPS_YN EXPSYN,
+                ORD_NO ORDNO,
+                DB_STS DBSTS,
+                CRE_USER CREUSER,
+                CRE_DATE CREDATE,
+                UPD_USER UPDUSER,
+                UPD_DATE UPDDATE
+        FROM TAG_MNG
+        WHERE DB_STS='A'
+        <if test="expsYn != null and expsYn != ''">
+            AND EXPS_YN='Y'
+        </if>
+        ORDER BY ORD_NO
+    </select>
+
+    <!--태그관리/목록 수정-->
+    <update id="updateTagMng" parameterType="kr.co.vwa.domain.TagVo">
+        UPDATE TAG_MNG
+        SET TAG_NM=#{tagNm},
+                EXPS_YN=#{expsYn},
+                UPD_USER=#{updUser},
+                UPD_DATE=NOW()
+        WHERE TAG_SEQ=#{tagSeq}
+        AND DB_STS='A'
+    </update>
+
+    <!--태그관리/목록 우선순위 수정-->
+    <update id="updateTagMngOrdNo" parameterType="kr.co.vwa.domain.TagVo">
+        UPDATE TAG_MNG
+        SET ORD_NO=#{ordNo}
+        WHERE TAG_SEQ=#{tagSeq}
+        AND DB_STS='A'
+    </update>
+</mapper>

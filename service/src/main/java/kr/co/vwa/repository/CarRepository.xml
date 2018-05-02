@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.co.vwa.repository.CarRepository">
+
+    <select id="selectCarMngList" resultType="kr.co.vwa.domain.CarMngVo" parameterType="java.util.Map">
+        SELECT
+              CAR_SEQ
+            , MAK
+            , MODEL
+            , DETAIL_MODEL
+            , SELL_STR_YEAR
+            , SELL_END_YEAR
+            , FUEL
+            , DISP
+            , RATING
+            , DETAIL_RATING
+            , RATING_STR_YEAR
+            , RATING_END_YEAR
+            , USE_YN
+        FROM CAR_MNG
+        WHERE 1=1
+            AND DB_STS = 'A'
+        <if test="searchModel != null and searchModel != ''">
+            AND MODEL = #{searchModel}
+        </if>
+        <if test="searchDetailModel != null and searchDetailModel != ''">
+            AND DETAIL_MODEL = #{searchDetailModel}
+        </if>
+        <if test="searchText != null and searchText != ''">
+            AND (DETAIL_MODEL LIKE CONCAT('%',#{searchText},'%')
+                 OR RATING LIKE CONCAT('%',#{searchText},'%')
+                 OR DETAIL_RATING LIKE CONCAT('%',#{searchText},'%'))
+        </if>
+    </select>
+
+    <select id="selectCarModelList" resultType="kr.co.vwa.domain.CarMngVo">
+        SELECT
+              MODEL
+        FROM CAR_MNG
+        WHERE DB_STS = 'A'
+        GROUP BY MODEL
+    </select>
+
+    <select id="selectCarModelListByUseYnIsY" resultType="kr.co.vwa.domain.CarMngVo">
+        SELECT
+              MODEL
+        FROM CAR_MNG
+        WHERE DB_STS = 'A'
+        AND USE_YN = 'Y'
+        GROUP BY MODEL
+    </select>
+
+    <select id="selectCarDetailModelList" resultType="kr.co.vwa.domain.CarMngVo">
+        SELECT
+          DETAIL_MODEL
+        FROM CAR_MNG
+        WHERE DB_STS = 'A'
+        AND MODEL = #{model}
+        GROUP BY DETAIL_MODEL
+    </select>
+
+    <select id="selectCarDetailModelListByUseYnIsY" resultType="kr.co.vwa.domain.CarMngVo">
+        SELECT
+          DETAIL_MODEL
+        FROM CAR_MNG
+        WHERE DB_STS = 'A'
+        AND USE_YN = 'Y'
+        AND MODEL = #{model}
+        GROUP BY DETAIL_MODEL
+    </select>
+
+    <select id="selectCarRatingList" resultType="kr.co.vwa.domain.CarMngVo">
+        SELECT
+          RATING
+        FROM CAR_MNG
+        WHERE DB_STS = 'A'
+        AND MODEL = #{model}
+        AND DETAIL_MODEL = #{detailModel}
+        GROUP BY RATING
+    </select>
+
+    <select id="selectCarRatingListByUseYnIsY" resultType="kr.co.vwa.domain.CarMngVo">
+        SELECT
+          RATING
+        FROM CAR_MNG
+        WHERE DB_STS = 'A'
+        AND USE_YN = 'Y'
+        AND MODEL = #{model}
+        AND DETAIL_MODEL = #{detailModel}
+        GROUP BY RATING
+    </select>
+
+    <select id="selectCarDetailRatingList" resultType="kr.co.vwa.domain.CarMngVo">
+        SELECT
+          DETAIL_RATING
+        FROM CAR_MNG
+        WHERE DB_STS = 'A'
+        AND MODEL = #{model}
+        AND DETAIL_MODEL = #{detailModel}
+        AND RATING = #{rating}
+        GROUP BY DETAIL_RATING
+    </select>
+
+    <select id="selectCarDetailRatingListByUseYnIsY" resultType="kr.co.vwa.domain.CarMngVo">
+        SELECT
+          DETAIL_RATING
+        FROM CAR_MNG
+        WHERE DB_STS = 'A'
+        AND USE_YN = 'Y'
+        AND MODEL = #{model}
+        AND DETAIL_MODEL = #{detailModel}
+        AND RATING = #{rating}
+        GROUP BY DETAIL_RATING
+    </select>
+
+    <insert id="insertCarMngList">
+        INSERT INTO CAR_MNG (
+             MAK
+            ,MODEL
+            ,DETAIL_MODEL
+            ,SELL_STR_YEAR
+            ,SELL_END_YEAR
+            ,FUEL
+            ,DISP
+            ,RATING
+            ,DETAIL_RATING
+            ,RATING_STR_YEAR
+            ,RATING_END_YEAR
+            ,USE_YN
+            ,DB_STS
+            ,CRE_USER
+            ,CRE_DATE
+        ) VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+                  #{item.mak}
+                , #{item.model}
+                , #{item.detailModel}
+                , #{item.sellStrYear}
+                , #{item.sellEndYear}
+                , #{item.fuel}
+                , #{item.disp}
+                , #{item.rating}
+                , #{item.detailRating}
+                , #{item.ratingStrYear}
+                , #{item.ratingEndYear}
+                , 'Y'
+                , 'A'
+                , #{item.creUser}
+                , now()
+            )
+        </foreach>
+    </insert>
+
+    <update id="updateCarMng" parameterType="kr.co.vwa.domain.CarMngVo">
+        UPDATE CAR_MNG SET
+              MODEL = #{model}
+            , DETAIL_MODEL = #{detailModel}
+            , SELL_STR_YEAR = #{sellStrYear}
+            , SELL_END_YEAR = #{sellEndYear}
+            , FUEL = #{fuel}
+            , DISP = #{disp}
+            , RATING = #{rating}
+            , DETAIL_RATING = #{detailRating}
+            , RATING_STR_YEAR = #{ratingStrYear}
+            , RATING_END_YEAR = #{ratingEndYear}
+            , USE_YN = #{useYn}
+            , DB_STS = 'A'
+            , UPD_USER = #{updUser}
+            , UPD_DATE = now()
+        WHERE CAR_SEQ = #{carSeq}
+    </update>
+
+</mapper>

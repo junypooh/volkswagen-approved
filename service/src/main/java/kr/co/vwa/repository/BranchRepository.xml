@@ -1,0 +1,305 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.co.vwa.repository.BranchRepository">
+    <resultMap id="branchList" type="kr.co.vwa.domain.BranchVo">
+        <result column="X-COORDINATE" property="xcoordinate"/>
+        <result column="Y-COORDINATE" property="ycoordinate"/>
+        <collection property="emailList" javaType="java.util.List" column="EXH_HALL_SEQ" ofType="kr.co.vwa.domain.EmailVo" select="selectReprEmail"/>
+    </resultMap>
+    
+    <resultMap id="branch" type="kr.co.vwa.domain.BranchVo">
+        <result column="X-COORDINATE" property="xcoordinate"/>
+        <result column="Y-COORDINATE" property="ycoordinate"/>
+        <collection property="emailList" javaType="java.util.List" column="EXH_HALL_SEQ" ofType="kr.co.vwa.domain.EmailVo" select="selectEmail"/>
+        <collection property="ipAddresses" javaType="java.util.List" column="EXH_HALL_SEQ" ofType="String" select="selectIpAddresses"/>
+        <collection property="authExhibMapList" javaType="java.util.List" column="EXH_HALL_SEQ" ofType="kr.co.vwa.domain.AuthExhibMapVo" select="selectAuthExhMap"/>
+    </resultMap>
+
+    <!-- 전시장관리/목록 전시장 리스트 조회 -->
+    <select id="selectBranchList" parameterType="java.util.Map" resultMap="branchList">
+        SELECT
+              EXH_HALL_SEQ
+            , EXH_HALL_SEQ AS exhHallSeq
+            , TYPE
+            , STORE_NM
+            , TEL
+            , ADDR
+            , DETAIL_ADDR
+            , EXPS_YN
+            , IFNULL(UPD_USER, CRE_USER ) AS UPD_USER
+            , IFNULL(UPD_DATE, CRE_DATE ) AS UPD_DATE
+            , `X-COORDINATE`
+            , `Y-COORDINATE`
+            , SIGUN
+        FROM EXHIBITION_HALL
+        WHERE DB_STS = 'A'
+        <if test="expsYn != null and expsYn != ''">
+            AND EXPS_YN = #{expsYn}
+        </if>
+        <if test="searchText != null and searchText != ''">
+            AND (TYPE LIKE CONCAT('%',#{searchText},'%')
+            OR STORE_NM LIKE CONCAT('%',#{searchText},'%'))
+        </if>
+        <if test="sigun != null and sigun != ''">
+            AND SIGUN=#{sigun}
+        </if>
+        ORDER BY EXPS_NO ASC
+    </select>
+
+    <!-- 전시장별 대표이메일 조회 -->
+    <select id="selectReprEmail" resultType="kr.co.vwa.domain.EmailVo">
+        SELECT
+              EXH_HALL_SEQ
+            , EMAIL
+            , REPR_EMAIL_YN
+        FROM EMAIL
+        WHERE DB_STS = 'A'
+          AND REPR_EMAIL_YN = 'Y'
+          AND EXH_HALL_SEQ = #{exhHallSeq}
+    </select>
+
+    <!-- 전시장관리/목록 노출여부 수정 -->
+    <update id="updateExpsYn" parameterType="kr.co.vwa.domain.BranchVo">
+        UPDATE EXHIBITION_HALL SET
+              EXPS_YN = #{expsYn}
+            , UPD_USER = #{updUser}
+            , UPD_DATE = NOW()
+        WHERE EXH_HALL_SEQ = #{exhHallSeq}
+    </update>
+
+    <!-- 전시장관리/목록 정렬저장 -->
+    <update id="updateExpsdNo" parameterType="kr.co.vwa.domain.BranchVo">
+        UPDATE EXHIBITION_HALL SET
+              EXPS_NO = #{expsNo}
+            , UPD_USER = #{updUser}
+            , UPD_DATE = NOW()
+        WHERE EXH_HALL_SEQ = #{exhHallSeq}
+    </update>
+
+    <!-- 전시장관리/등록 전시장정보등록 -->
+    <insert id="registeBranch" parameterType="kr.co.vwa.domain.BranchVo" useGeneratedKeys="true" keyProperty="exhHallSeq">
+        INSERT INTO EXHIBITION_HALL
+        (
+              TYPE
+            , STORE_NM
+            , TEL
+            , SIGUN
+            , ADDR
+            , DETAIL_ADDR
+            , `X-COORDINATE`
+            , `Y-COORDINATE`
+            , EXPS_YN
+            , EXPS_NO
+            , DB_STS
+            , CRE_USER
+            , CRE_DATE
+        ) SELECT
+              #{type}
+            , #{storeNm}
+            , #{tel}
+            , #{sigun}
+            , #{addr}
+            , #{detailAddr}
+            , #{xcoordinate}
+            , #{ycoordinate}
+            , #{expsYn}
+            , COUNT(*)
+            , 'A'
+            , #{creUser}
+            , NOW()
+        FROM EXHIBITION_HALL
+    </insert>
+
+    <!-- 전시장관리/등록 이메일리스트등록 -->
+    <insert id="registeEmailList" parameterType="kr.co.vwa.domain.EmailVo">
+        INSERT INTO EMAIL
+        (
+              EXH_HALL_SEQ
+            , EMAIL
+            , REPR_EMAIL_YN
+            , DB_STS
+            , CRE_USER
+            , CRE_DATE
+        ) VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+                  #{item.exhHallSeq}
+                , #{item.email}
+                , #{item.reprEmailYn}
+                , 'A'
+                , #{item.creUser}
+                , NOW()
+            )
+        </foreach>
+    </insert>
+
+    <!-- 전시장관리/등록 IP리스트 등록 -->
+    <insert id="registeIpList" parameterType="kr.co.vwa.domain.BranchVo">
+        INSERT INTO EXHIBITION_HALL_IP
+        (
+              IP_ADDRESS
+            , EXH_HALL_SEQ
+            , DB_STS
+            , CRE_USER
+            , CRE_DATE
+        ) VALUES
+        <foreach collection="ipAddresses" item="ipAddress" separator=",">
+            (
+                  #{ipAddress}
+                , #{exhHallSeq}
+                , 'A'
+                , #{creUser}
+                , NOW()
+            )
+        </foreach>
+    </insert>
+
+    <!-- 전시장관리/등록 IP리스트 삭제 -->
+    <delete id="deleteIpList" parameterType="kr.co.vwa.domain.BranchVo">
+        DELETE FROM EXHIBITION_HALL_IP WHERE EXH_HALL_SEQ = #{exhHallSeq}
+    </delete>
+
+    <!-- 전시장관리/상세 전시장정보조회 -->
+    <select id="selectOneBranch" resultMap="branch">
+        SELECT
+              EXH_HALL_SEQ
+            , EXH_HALL_SEQ AS exhHallSeq
+            , TYPE
+            , STORE_NM
+            , TEL
+            , SIGUN
+            , ADDR
+            , DETAIL_ADDR
+            , `X-COORDINATE`
+            , `Y-COORDINATE`
+            , EXPS_YN
+            , EXPS_NO
+            , CRE_USER
+            , CRE_DATE
+            , UPD_USER
+            , UPD_DATE
+        FROM EXHIBITION_HALL
+        WHERE EXH_HALL_SEQ = #{seq}
+          AND DB_STS = 'A'
+    </select>
+
+    <!-- 전시장별 이메일 리스트 조회(대표이메일순) -->
+    <select id="selectEmail" resultType="kr.co.vwa.domain.EmailVo">
+        SELECT
+              EXH_HALL_SEQ
+            , EMAIL
+            , REPR_EMAIL_YN
+        FROM EMAIL
+        WHERE DB_STS = 'A'
+          AND EXH_HALL_SEQ = #{exhHallSeq}
+        ORDER BY REPR_EMAIL_YN DESC
+    </select>
+
+    <!-- 전시장별 IP 리스트 조회 -->
+    <select id="selectIpAddresses" resultType="String">
+        SELECT
+              IP_ADDRESS
+        FROM EXHIBITION_HALL_IP
+        WHERE DB_STS = 'A'
+          AND EXH_HALL_SEQ = #{exhHallSeq}
+    </select>
+
+    <!-- 전시장별 관리자id, 관리자권한 리스트 조회 -->
+    <select id="selectAuthExhMap" resultType="kr.co.vwa.domain.AuthExhibMapVo">
+        SELECT
+              A.AUTH
+            , B.ID
+        FROM ADMIN_EXHIBITION_HALL_MAP A
+        , ADMIN_MNG B
+        WHERE A.DB_STS = 'A'
+        AND B.DB_STS = 'A'
+        AND A.ADM_SEQ = B.ADM_SEQ
+        AND A.EXH_HALL_SEQ = #{exhHallSeq}
+    </select>
+
+    <!-- 전시장관리/상세 전시장정보수정 -->
+    <update id="updateBranch" parameterType="kr.co.vwa.domain.BranchVo">
+        UPDATE EXHIBITION_HALL SET
+              TYPE = #{type}
+            , STORE_NM = #{storeNm}
+            , TEL = #{tel}
+            , SIGUN = #{sigun}
+            , ADDR = #{addr}
+            , DETAIL_ADDR = #{detailAddr}
+            , `X-COORDINATE` = #{xcoordinate}
+            , `Y-COORDINATE` = #{ycoordinate}
+            , EXPS_YN = #{expsYn}
+            , UPD_USER = #{updUser}
+            , UPD_DATE = NOW()
+        WHERE EXH_HALL_SEQ = #{exhHallSeq}
+    </update>
+
+    <!-- 전시장관리/상세 전시장의 이메일리스트삭제 -->
+    <update id="deleteEmail" parameterType="kr.co.vwa.domain.BranchVo">
+        UPDATE EMAIL SET
+              DB_STS = 'D'
+            , REPR_EMAIL_YN = 'N'
+            , UPD_USER = #{updUser}
+            , UPD_DATE = NOW()
+        WHERE EXH_HALL_SEQ = #{exhHallSeq}
+    </update>
+
+    <!-- 전시장관리/상세 전시장의 IP 리스트삭제 -->
+    <update id="deleteIpAddress" parameterType="kr.co.vwa.domain.BranchVo">
+        UPDATE EXHIBITION_HALL_IP SET
+              DB_STS = 'D'
+            , UPD_USER = #{updUser}
+            , UPD_DATE = NOW()
+        WHERE EXH_HALL_SEQ = #{exhHallSeq}
+    </update>
+
+    <!-- 전시장관리/상세 전시장정보삭제 -->
+    <update id="deleteBranch" parameterType="kr.co.vwa.domain.BranchVo">
+        UPDATE EXHIBITION_HALL SET
+              DB_STS = 'D'
+            , UPD_USER = #{updUser}
+            , UPD_DATE = NOW()
+        WHERE EXH_HALL_SEQ = #{exhHallSeq}
+    </update>
+
+    <!-- 전시장관리/상세 전시장 이메일 upsert -->
+    <insert id="upsertEmail" parameterType="kr.co.vwa.domain.EmailVo">
+        INSERT INTO EMAIL (
+              EXH_HALL_SEQ
+            , EMAIL
+            , REPR_EMAIL_YN
+            , DB_STS
+            , CRE_USER
+            , CRE_DATE
+        ) VALUES (
+              #{exhHallSeq}
+            , #{email}
+            , #{reprEmailYn}
+            , 'A'
+            , #{creUser}
+            , NOW()
+        ) ON DUPLICATE KEY UPDATE
+              REPR_EMAIL_YN = #{reprEmailYn}
+            , DB_STS = 'A'
+            , UPD_USER = #{creUser}
+            , UPD_DATE = NOW()
+    </insert>
+
+    <!-- 전시장관리/목록 전시장 리스트 조회 -->
+    <select id="groupBranchList" parameterType="java.util.Map" resultType="kr.co.vwa.domain.BranchVo">
+        SELECT	A.EXH_HALL_SEQ, A.SIGUN
+        FROM
+                (
+                    SELECT	EXH_HALL_SEQ, SIGUN, EXPS_NO
+                    FROM	EXHIBITION_HALL
+                    WHERE 	DB_STS = 'A'
+                    <if test="expsYn != null and expsYn != ''">
+                        AND EXPS_YN = #{expsYn}
+                    </if>
+                    ORDER BY EXPS_NO ASC
+                ) A
+        GROUP BY A.SIGUN
+        ORDER BY A.EXPS_NO ASC
+    </select>
+
+</mapper>

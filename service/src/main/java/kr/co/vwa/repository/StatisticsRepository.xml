@@ -1,0 +1,538 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+
+<mapper namespace="kr.co.vwa.repository.StatisticsRepository">
+
+    <!-- 통계관리/사이트통계 서비스별 접속수 -->
+    <!-- 통계관리/사이트통계 일별 접속수 -->
+    <select id="dateAccessService" resultType="kr.co.vwa.domain.StatisticsVo">
+        SELECT * FROM (
+            SELECT
+                  COALESCE(MENU, 'Total') AS MENU
+                , CASE WHEN COALESCE(MENU, 'Total') = 'Total' THEN 1 ELSE 0 END AS SORT
+                , SUM(CASE WHEN DEVICE = 'Computer' THEN 1 ELSE 0 END) AS PC
+                , SUM(CASE WHEN DEVICE IN ('Mobile', 'Tablet') THEN 1 ELSE 0 END) AS MO
+                , SUM(CASE WHEN DEVICE NOT IN ('Computer', 'Mobile', 'Tablet') THEN 1 ELSE 0 END) AS UN
+                , COUNT(1) AS TOT
+                , ROUND(COUNT(1) / (SELECT COUNT(1)
+                                              FROM ACCESS_LOG
+                                              <choose>
+                                                  <when test="startDate != null and startDate != '' and endDate != null and endDate != '' ">
+                                                      WHERE    REQ_DATE BETWEEN REGEXP_REPLACE('[[:punct:]]', '', #{startDate}) AND REGEXP_REPLACE('[[:punct:]]', '', #{endDate})
+                                                  </when>
+                                                  <otherwise>
+                                                      WHERE    REQ_DATE BETWEEN  DATE_FORMAT(NOW(), '%Y%m%d') AND DATE_FORMAT(NOW(), '%Y%m%d')
+                                                  </otherwise>
+                                              </choose>
+                                              ) * 100, 2) AS PER
+            FROM      ACCESS_LOG
+            <choose>
+                <when test="startDate != null and startDate != '' and endDate != null and endDate != '' ">
+                    WHERE    REQ_DATE BETWEEN REGEXP_REPLACE('[[:punct:]]', '', #{startDate}) AND REGEXP_REPLACE('[[:punct:]]', '', #{endDate})
+                </when>
+                <otherwise>
+                    WHERE    REQ_DATE BETWEEN  DATE_FORMAT(NOW(), '%Y%m%d') AND DATE_FORMAT(NOW(), '%Y%m%d')
+                </otherwise>
+            </choose>
+            GROUP BY  MENU
+            WITH ROLLUP
+        ) A ORDER BY SORT ASC, PER DESC
+    </select>
+
+    <!-- 통계관리/사이트통계 월별 접속수 -->
+    <select id="monthAccessService" resultType="kr.co.vwa.domain.StatisticsVo">
+        SELECT * FROM (
+            SELECT
+                  COALESCE(MENU, 'Total') AS MENU
+                , CASE WHEN COALESCE(MENU, 'Total') = 'Total' THEN 1 ELSE 0 END AS SORT
+                , SUM(CASE WHEN DEVICE = 'Computer' THEN 1 ELSE 0 END) AS PC
+                , SUM(CASE WHEN DEVICE IN ('Mobile', 'Tablet') THEN 1 ELSE 0 END) AS MO
+                , SUM(CASE WHEN DEVICE NOT IN ('Computer', 'Mobile', 'Tablet') THEN 1 ELSE 0 END) AS UN
+                , COUNT(1) AS TOT
+                , ROUND(COUNT(1) / (SELECT COUNT(1)
+                                              FROM ACCESS_LOG
+                                              <choose>
+                                                  <when test="startDate != null and startDate != '' and endDate != null and endDate != '' ">
+                                                      WHERE    REQ_MONTH BETWEEN REGEXP_REPLACE('[[:punct:]]', '', #{startDate}) AND REGEXP_REPLACE('[[:punct:]]', '', #{endDate})
+                                                  </when>
+                                                  <otherwise>
+                                                      WHERE    REQ_MONTH BETWEEN  DATE_FORMAT(NOW(), '%Y%m') AND DATE_FORMAT(NOW(), '%Y%m')
+                                                  </otherwise>
+                                              </choose>
+                                              ) * 100, 2) AS PER
+            FROM      ACCESS_LOG
+            <choose>
+                <when test="startDate != null and startDate != '' and endDate != null and endDate != '' ">
+                    WHERE    REQ_MONTH BETWEEN REGEXP_REPLACE('[[:punct:]]', '', #{startDate}) AND REGEXP_REPLACE('[[:punct:]]', '', #{endDate})
+                </when>
+                <otherwise>
+                    WHERE    REQ_MONTH BETWEEN  DATE_FORMAT(NOW(), '%Y%m') AND DATE_FORMAT(NOW(), '%Y%m')
+                </otherwise>
+            </choose>
+            GROUP BY  MENU
+            WITH ROLLUP
+        ) A ORDER BY SORT ASC, PER DESC
+    </select>
+
+    <!-- 통계관리/사이트통계 연도별 접속수 -->
+    <select id="yearAccessService" resultType="kr.co.vwa.domain.StatisticsVo">
+        SELECT * FROM (
+            SELECT
+                  COALESCE(MENU, 'Total') AS MENU
+                , CASE WHEN COALESCE(MENU, 'Total') = 'Total' THEN 1 ELSE 0 END AS SORT
+                , SUM(CASE WHEN DEVICE = 'Computer' THEN 1 ELSE 0 END) AS PC
+                , SUM(CASE WHEN DEVICE IN ('Mobile', 'Tablet') THEN 1 ELSE 0 END) AS MO
+                , SUM(CASE WHEN DEVICE NOT IN ('Computer', 'Mobile', 'Tablet') THEN 1 ELSE 0 END) AS UN
+                , COUNT(1) AS TOT
+                , ROUND(COUNT(1) / (SELECT COUNT(1)
+                                              FROM ACCESS_LOG
+                                              <choose>
+                                                  <when test="startDate != null and startDate != '' and endDate != null and endDate != '' ">
+                                                      WHERE    REQ_YEAR BETWEEN REGEXP_REPLACE('[[:punct:]]', '', #{startDate}) AND REGEXP_REPLACE('[[:punct:]]', '', #{endDate})
+                                                  </when>
+                                                  <otherwise>
+                                                      WHERE    REQ_YEAR BETWEEN  DATE_FORMAT(NOW(), '%Y') AND DATE_FORMAT(NOW(), '%Y')
+                                                  </otherwise>
+                                              </choose>
+                                              ) * 100, 2) AS PER
+            FROM      ACCESS_LOG
+            <choose>
+                <when test="startDate != null and startDate != '' and endDate != null and endDate != '' ">
+                    WHERE    REQ_YEAR BETWEEN REGEXP_REPLACE('[[:punct:]]', '', #{startDate}) AND REGEXP_REPLACE('[[:punct:]]', '', #{endDate})
+                </when>
+                <otherwise>
+                    WHERE    REQ_YEAR BETWEEN  DATE_FORMAT(NOW(), '%Y') AND DATE_FORMAT(NOW(), '%Y')
+                </otherwise>
+            </choose>
+            GROUP BY  MENU
+            WITH ROLLUP
+        ) A ORDER BY SORT ASC, PER DESC
+    </select>
+
+    <!-- 통계관리/사이트통계 유입경로 -->
+    <!-- 통계관리/사이트통계 일별 유입경로 -->
+    <select id="dateAccessPath" resultType="kr.co.vwa.domain.StatisticsVo">
+        SELECT * FROM (
+            SELECT
+                  COALESCE(REFERER_SITE, 'Total') AS REFERER_SITE
+                , CASE WHEN COALESCE(REFERER_SITE, 'Total') = 'Total' THEN 1 ELSE 0 END AS SORT
+                , SUM(CASE WHEN DEVICE = 'Computer' THEN 1 ELSE 0 END) AS PC
+                , SUM(CASE WHEN DEVICE IN ('Mobile', 'Tablet') THEN 1 ELSE 0 END) AS MO
+                , SUM(CASE WHEN DEVICE NOT IN ('Computer', 'Mobile', 'Tablet') THEN 1 ELSE 0 END) AS UN
+                , COUNT(1) AS TOT
+                , REQ_DATE
+                , ROUND(COUNT(1) / (SELECT COUNT(1)
+                                              FROM ACCESS_LOG
+                                              <choose>
+                                                  <when test="startDate != null and startDate != '' and endDate != null and endDate != '' ">
+                                                      WHERE    REQ_DATE BETWEEN REGEXP_REPLACE('[[:punct:]]', '', #{startDate}) AND REGEXP_REPLACE('[[:punct:]]', '', #{endDate})
+                                                  </when>
+                                                  <otherwise>
+                                                      WHERE    REQ_DATE BETWEEN  DATE_FORMAT(NOW(), '%Y%m%d') AND DATE_FORMAT(NOW(), '%Y%m%d')
+                                                  </otherwise>
+                                              </choose>
+                                              ) * 100, 2) AS PER
+            FROM
+                    (
+                        SELECT    COALESCE(REFERER_SITE, 'N/A') REFERER_SITE
+                                , DEVICE
+                                , REQ_DATE
+                        FROM      ACCESS_LOG
+                    ) A
+            <choose>
+                <when test="startDate != null and startDate != '' and endDate != null and endDate != '' ">
+                    WHERE    REQ_DATE BETWEEN REGEXP_REPLACE('[[:punct:]]', '', #{startDate}) AND REGEXP_REPLACE('[[:punct:]]', '', #{endDate})
+                </when>
+                <otherwise>
+                    WHERE    REQ_DATE BETWEEN  DATE_FORMAT(NOW(), '%Y%m%d') AND DATE_FORMAT(NOW(), '%Y%m%d')
+                </otherwise>
+            </choose>
+            GROUP BY  REFERER_SITE
+            WITH ROLLUP
+        ) AA ORDER BY SORT ASC, PER DESC
+    </select>
+
+    <!-- 통계관리/사이트통계 월별 유입경로 -->
+    <select id="monthAccessPath" resultType="kr.co.vwa.domain.StatisticsVo">
+        SELECT * FROM (
+            SELECT
+                  COALESCE(REFERER_SITE, 'Total') AS REFERER_SITE
+                , CASE WHEN COALESCE(REFERER_SITE, 'Total') = 'Total' THEN 1 ELSE 0 END AS SORT
+                , SUM(CASE WHEN DEVICE = 'Computer' THEN 1 ELSE 0 END) AS PC
+                , SUM(CASE WHEN DEVICE IN ('Mobile', 'Tablet') THEN 1 ELSE 0 END) AS MO
+                , SUM(CASE WHEN DEVICE NOT IN ('Computer', 'Mobile', 'Tablet') THEN 1 ELSE 0 END) AS UN
+                , COUNT(1) AS TOT
+                , REQ_MONTH
+                , ROUND(COUNT(1) / (SELECT COUNT(1)
+                                              FROM ACCESS_LOG
+                                              <choose>
+                                                  <when test="startDate != null and startDate != '' and endDate != null and endDate != '' ">
+                                                      WHERE    REQ_MONTH BETWEEN REGEXP_REPLACE('[[:punct:]]', '', #{startDate}) AND REGEXP_REPLACE('[[:punct:]]', '', #{endDate})
+                                                  </when>
+                                                  <otherwise>
+                                                      WHERE    REQ_MONTH BETWEEN  DATE_FORMAT(NOW(), '%Y%m') AND DATE_FORMAT(NOW(), '%Y%m')
+                                                  </otherwise>
+                                              </choose>
+                                              ) * 100, 2) AS PER
+            FROM
+                    (
+                        SELECT    COALESCE(REFERER_SITE, 'N/A') REFERER_SITE
+                                , DEVICE
+                                , REQ_MONTH
+                        FROM      ACCESS_LOG
+                    ) A
+            <choose>
+                <when test="startDate != null and startDate != '' and endDate != null and endDate != '' ">
+                    WHERE    REQ_MONTH BETWEEN REGEXP_REPLACE('[[:punct:]]', '', #{startDate}) AND REGEXP_REPLACE('[[:punct:]]', '', #{endDate})
+                </when>
+                <otherwise>
+                    WHERE    REQ_MONTH BETWEEN  DATE_FORMAT(NOW(), '%Y%m') AND DATE_FORMAT(NOW(), '%Y%m')
+                </otherwise>
+            </choose>
+            GROUP BY  REFERER_SITE
+            WITH ROLLUP
+        ) AA ORDER BY SORT ASC, PER DESC
+    </select>
+
+    <!-- 통계관리/사이트통계 연도별 유입경로 -->
+    <select id="yearAccessPath" resultType="kr.co.vwa.domain.StatisticsVo">
+        SELECT * FROM (
+            SELECT
+                  COALESCE(REFERER_SITE, 'Total') AS REFERER_SITE
+                , CASE WHEN COALESCE(REFERER_SITE, 'Total') = 'Total' THEN 1 ELSE 0 END AS SORT
+                , SUM(CASE WHEN DEVICE = 'Computer' THEN 1 ELSE 0 END) AS PC
+                , SUM(CASE WHEN DEVICE IN ('Mobile', 'Tablet') THEN 1 ELSE 0 END) AS MO
+                , SUM(CASE WHEN DEVICE NOT IN ('Computer', 'Mobile', 'Tablet') THEN 1 ELSE 0 END) AS UN
+                , COUNT(1) AS TOT
+                , REQ_YEAR
+                , ROUND(COUNT(1) / (SELECT COUNT(1)
+                                              FROM ACCESS_LOG
+                                              <choose>
+                                                  <when test="startDate != null and startDate != '' and endDate != null and endDate != '' ">
+                                                      WHERE    REQ_YEAR BETWEEN REGEXP_REPLACE('[[:punct:]]', '', #{startDate}) AND REGEXP_REPLACE('[[:punct:]]', '', #{endDate})
+                                                  </when>
+                                                  <otherwise>
+                                                      WHERE    REQ_YEAR BETWEEN  DATE_FORMAT(NOW(), '%Y') AND DATE_FORMAT(NOW(), '%Y')
+                                                  </otherwise>
+                                              </choose>
+                                              ) * 100, 2) AS PER
+            FROM
+                    (
+                        SELECT    COALESCE(REFERER_SITE, 'N/A') REFERER_SITE
+                                , REQ_YEAR
+                                , DEVICE
+                        FROM      ACCESS_LOG
+                    ) A
+            <choose>
+                <when test="startDate != null and startDate != '' and endDate != null and endDate != '' ">
+                    WHERE    REQ_YEAR BETWEEN REGEXP_REPLACE('[[:punct:]]', '', #{startDate}) AND REGEXP_REPLACE('[[:punct:]]', '', #{endDate})
+                </when>
+                <otherwise>
+                    WHERE    REQ_YEAR BETWEEN  DATE_FORMAT(NOW(), '%Y') AND DATE_FORMAT(NOW(), '%Y')
+                </otherwise>
+            </choose>
+            GROUP BY  REFERER_SITE
+            WITH ROLLUP
+        ) AA ORDER BY SORT ASC, PER DESC
+    </select>
+
+    <!-- 통계관리/사이트통계 매물공유수 -->
+    <!-- 통계관리/사이트통계 일별 매물공유수 -->
+    <select id="dateShareCount" resultType="kr.co.vwa.domain.StatisticsVo">
+        SELECT * FROM (
+            SELECT
+                  COALESCE(PLATFORM, 'Total') AS PLATFORM
+                , CASE WHEN COALESCE(PLATFORM, 'Total') = 'Total' THEN 1 ELSE 0 END AS SORT
+                , SUM(CASE WHEN DEVICE = 'Computer' THEN 1 ELSE 0 END) AS PC
+                , SUM(CASE WHEN DEVICE IN ('Mobile', 'Tablet') THEN 1 ELSE 0 END) AS MO
+                , SUM(CASE WHEN DEVICE NOT IN ('Computer', 'Mobile', 'Tablet') THEN 1 ELSE 0 END) AS UN
+                , COUNT(1) AS TOT
+                , ROUND(COUNT(1) / (SELECT COUNT(1)
+                                              FROM SHARING_LOG
+                                              <choose>
+                                                  <when test="startDate != null and startDate != '' and endDate != null and endDate != '' ">
+                                                      WHERE    REQ_DATE BETWEEN REGEXP_REPLACE('[[:punct:]]', '', #{startDate}) AND REGEXP_REPLACE('[[:punct:]]', '', #{endDate})
+                                                  </when>
+                                                  <otherwise>
+                                                      WHERE    REQ_DATE BETWEEN  DATE_FORMAT(NOW(), '%Y%m%d') AND DATE_FORMAT(NOW(), '%Y%m%d')
+                                                   </otherwise>
+                                              </choose>
+                                              ) * 100, 2) AS PER
+            FROM      SHARING_LOG
+            <choose>
+                <when test="startDate != null and startDate != '' and endDate != null and endDate != '' ">
+                    WHERE    REQ_DATE BETWEEN REGEXP_REPLACE('[[:punct:]]', '', #{startDate}) AND REGEXP_REPLACE('[[:punct:]]', '', #{endDate})
+                </when>
+                <otherwise>
+                    WHERE    REQ_DATE BETWEEN  DATE_FORMAT(NOW(), '%Y%m%d') AND DATE_FORMAT(NOW(), '%Y%m%d')
+                </otherwise>
+            </choose>
+            GROUP BY  PLATFORM
+            WITH ROLLUP
+        ) A ORDER BY SORT ASC, PER DESC
+    </select>
+
+    <!-- 통계관리/사이트통계 월별 매물공유수 -->
+    <select id="monthShareCount" resultType="kr.co.vwa.domain.StatisticsVo">
+        SELECT * FROM (
+            SELECT
+                  COALESCE(PLATFORM, 'Total') AS PLATFORM
+                , CASE WHEN COALESCE(PLATFORM, 'Total') = 'Total' THEN 1 ELSE 0 END AS SORT
+                , SUM(CASE WHEN DEVICE = 'Computer' THEN 1 ELSE 0 END) AS PC
+                , SUM(CASE WHEN DEVICE IN ('Mobile', 'Tablet') THEN 1 ELSE 0 END) AS MO
+                , SUM(CASE WHEN DEVICE NOT IN ('Computer', 'Mobile', 'Tablet') THEN 1 ELSE 0 END) AS UN
+                , COUNT(1) AS TOT
+                , ROUND(COUNT(1) / (SELECT COUNT(1)
+                                              FROM SHARING_LOG
+                                              <choose>
+                                                  <when test="startDate != null and startDate != '' and endDate != null and endDate != '' ">
+                                                      WHERE    REQ_MONTH BETWEEN REGEXP_REPLACE('[[:punct:]]', '', #{startDate}) AND REGEXP_REPLACE('[[:punct:]]', '', #{endDate})
+                                                  </when>
+                                                  <otherwise>
+                                                      WHERE    REQ_MONTH BETWEEN  DATE_FORMAT(NOW(), '%Y%m') AND DATE_FORMAT(NOW(), '%Y%m')
+                                                  </otherwise>
+                                              </choose>
+                                              ) * 100, 2) AS PER
+            FROM      SHARING_LOG
+            <choose>
+                <when test="startDate != null and startDate != '' and endDate != null and endDate != '' ">
+                    WHERE    REQ_MONTH BETWEEN REGEXP_REPLACE('[[:punct:]]', '', #{startDate}) AND REGEXP_REPLACE('[[:punct:]]', '', #{endDate})
+                </when>
+                <otherwise>
+                    WHERE    REQ_MONTH BETWEEN  DATE_FORMAT(NOW(), '%Y%m') AND DATE_FORMAT(NOW(), '%Y%m')
+                </otherwise>
+            </choose>
+            GROUP BY  PLATFORM
+            WITH ROLLUP
+        ) A ORDER BY SORT ASC, PER DESC
+    </select>
+
+    <!-- 통계관리/사이트통계 연도별 매물공유수 -->
+    <select id="yearShareCount" resultType="kr.co.vwa.domain.StatisticsVo">
+        SELECT * FROM (
+            SELECT
+                  COALESCE(PLATFORM, 'Total') AS PLATFORM
+                , CASE WHEN COALESCE(PLATFORM, 'Total') = 'Total' THEN 1 ELSE 0 END AS SORT
+                , SUM(CASE WHEN DEVICE = 'Computer' THEN 1 ELSE 0 END) AS PC
+                , SUM(CASE WHEN DEVICE IN ('Mobile', 'Tablet') THEN 1 ELSE 0 END) AS MO
+                , SUM(CASE WHEN DEVICE NOT IN ('Computer', 'Mobile', 'Tablet') THEN 1 ELSE 0 END) AS UN
+                , COUNT(1) AS TOT
+                , ROUND(COUNT(1) / (SELECT COUNT(1)
+                                              FROM   SHARING_LOG
+                                              <choose>
+                                                  <when test="startDate != null and startDate != '' and endDate != null and endDate != '' ">
+                                                      WHERE    REQ_YEAR BETWEEN REGEXP_REPLACE('[[:punct:]]', '', #{startDate}) AND REGEXP_REPLACE('[[:punct:]]', '', #{endDate})
+                                                  </when>
+                                                  <otherwise>
+                                                      WHERE    REQ_YEAR BETWEEN  DATE_FORMAT(NOW(), '%Y') AND DATE_FORMAT(NOW(), '%Y')
+                                                  </otherwise>
+                                              </choose>
+                                              ) * 100, 2) AS PER
+            FROM      SHARING_LOG
+            <choose>
+                <when test="startDate != null and startDate != '' and endDate != null and endDate != '' ">
+                    WHERE    REQ_YEAR BETWEEN REGEXP_REPLACE('[[:punct:]]', '', #{startDate}) AND REGEXP_REPLACE('[[:punct:]]', '', #{endDate})
+                </when>
+                <otherwise>
+                    WHERE    REQ_YEAR BETWEEN  DATE_FORMAT(NOW(), '%Y') AND DATE_FORMAT(NOW(), '%Y')
+                </otherwise>
+            </choose>
+            GROUP BY  PLATFORM
+            WITH ROLLUP
+        ) A ORDER BY SORT ASC, PER DESC
+    </select>
+
+    <!-- 통계관리/사이트통계 접속디바이스 -->
+    <!-- 통계관리/사이트통계 일별 접속디바이스 -->
+    <select id="dateAccessDevice" resultType="kr.co.vwa.domain.StatisticsVo">
+        SELECT * FROM (
+            SELECT
+                COALESCE(CASE WHEN DEVICE = 'Computer' THEN 'PC' WHEN DEVICE = 'Unknown' THEN 'etc' ELSE DEVICE END, 'Total') AS DEVICE
+                , CASE WHEN COALESCE(DEVICE, 'Total') = 'Total' THEN 1 ELSE 0 END AS SORT
+                , COUNT(1) AS TOT
+                , ROUND(COUNT(1) / (SELECT COUNT(1)
+                                              FROM ACCESS_LOG
+                                              <choose>
+                                                  <when test="startDate != null and startDate != '' and endDate != null and endDate != '' ">
+                                                      WHERE    REQ_DATE BETWEEN REGEXP_REPLACE('[[:punct:]]', '', #{startDate}) AND REGEXP_REPLACE('[[:punct:]]', '', #{endDate})
+                                                  </when>
+                                                  <otherwise>
+                                                      WHERE    REQ_DATE BETWEEN  DATE_FORMAT(NOW(), '%Y%m%d') AND DATE_FORMAT(NOW(), '%Y%m%d')
+                                                  </otherwise>
+                                              </choose>
+                                              ) * 100, 2) AS PER
+            FROM      ACCESS_LOG
+            <choose>
+                <when test="startDate != null and startDate != '' and endDate != null and endDate != '' ">
+                    WHERE    REQ_DATE BETWEEN REGEXP_REPLACE('[[:punct:]]', '', #{startDate}) AND REGEXP_REPLACE('[[:punct:]]', '', #{endDate})
+                </when>
+                <otherwise>
+                    WHERE    REQ_DATE BETWEEN  DATE_FORMAT(NOW(), '%Y%m%d') AND DATE_FORMAT(NOW(), '%Y%m%d')
+                </otherwise>
+            </choose>
+            GROUP BY  DEVICE
+            WITH ROLLUP
+        ) A ORDER BY SORT ASC, PER DESC
+    </select>
+
+    <!-- 통계관리/사이트통계 월별 접속디바이스 -->
+    <select id="monthAccessDevice" resultType="kr.co.vwa.domain.StatisticsVo">
+        SELECT * FROM (
+            SELECT
+                COALESCE(CASE WHEN DEVICE = 'Computer' THEN 'PC' WHEN DEVICE = 'Unknown' THEN 'etc' ELSE DEVICE END, 'Total') AS DEVICE
+                , CASE WHEN COALESCE(DEVICE, 'Total') = 'Total' THEN 1 ELSE 0 END AS SORT
+                , COUNT(1) AS TOT
+                , ROUND(COUNT(1) / (SELECT COUNT(1)
+                                              FROM ACCESS_LOG
+                                              <choose>
+                                                  <when test="startDate != null and startDate != '' and endDate != null and endDate != '' ">
+                                                      WHERE    REQ_MONTH BETWEEN REGEXP_REPLACE('[[:punct:]]', '', #{startDate}) AND REGEXP_REPLACE('[[:punct:]]', '', #{endDate})
+                                                  </when>
+                                                  <otherwise>
+                                                      WHERE    REQ_MONTH BETWEEN  DATE_FORMAT(NOW(), '%Y%m') AND DATE_FORMAT(NOW(), '%Y%m')
+                                                  </otherwise>
+                                              </choose>
+                                              ) * 100, 2) AS PER
+            FROM      ACCESS_LOG
+            <choose>
+                <when test="startDate != null and startDate != '' and endDate != null and endDate != '' ">
+                    WHERE    REQ_MONTH BETWEEN REGEXP_REPLACE('[[:punct:]]', '', #{startDate}) AND REGEXP_REPLACE('[[:punct:]]', '', #{endDate})
+                </when>
+                <otherwise>
+                    WHERE    REQ_MONTH BETWEEN  DATE_FORMAT(NOW(), '%Y%m') AND DATE_FORMAT(NOW(), '%Y%m')
+                </otherwise>
+            </choose>
+            GROUP BY  DEVICE
+            WITH ROLLUP
+        ) A ORDER BY SORT ASC, PER DESC
+    </select>
+
+    <!-- 통계관리/사이트통계 연도별 접속디바이스 -->
+    <select id="yearAccessDevice" resultType="kr.co.vwa.domain.StatisticsVo">
+        SELECT * FROM (
+            SELECT
+                COALESCE(CASE WHEN DEVICE = 'Computer' THEN 'PC' WHEN DEVICE = 'Unknown' THEN 'etc' ELSE DEVICE END, 'Total') AS DEVICE
+                , CASE WHEN COALESCE(DEVICE, 'Total') = 'Total' THEN 1 ELSE 0 END AS SORT
+                , COUNT(1) AS TOT
+                , ROUND(COUNT(1) / (SELECT COUNT(1)
+                                              FROM   ACCESS_LOG
+                                              <choose>
+                                                  <when test="startDate != null and startDate != '' and endDate != null and endDate != '' ">
+                                                      WHERE    REQ_YEAR BETWEEN REGEXP_REPLACE('[[:punct:]]', '', #{startDate}) AND REGEXP_REPLACE('[[:punct:]]', '', #{endDate})
+                                                  </when>
+                                                  <otherwise>
+                                                      WHERE    REQ_YEAR BETWEEN  DATE_FORMAT(NOW(), '%Y') AND DATE_FORMAT(NOW(), '%Y')
+                                                  </otherwise>
+                                              </choose>
+                                              ) * 100, 2) AS PER
+            FROM      ACCESS_LOG
+            <choose>
+                <when test="startDate != null and startDate != '' and endDate != null and endDate != '' ">
+                    WHERE    REQ_YEAR BETWEEN REGEXP_REPLACE('[[:punct:]]', '', #{startDate}) AND REGEXP_REPLACE('[[:punct:]]', '', #{endDate})
+                </when>
+                <otherwise>
+                    WHERE    REQ_YEAR BETWEEN  DATE_FORMAT(NOW(), '%Y') AND DATE_FORMAT(NOW(), '%Y')
+                </otherwise>
+            </choose>
+            GROUP BY  DEVICE
+            WITH ROLLUP
+        ) A ORDER BY SORT ASC, PER DESC
+    </select>
+
+    <!-- 통계관리/사이트통계 접속브라우저 -->
+    <!-- 통계관리/사이트통계 일별 접속브라우저 -->
+    <select id="dateAccessBrowser" resultType="kr.co.vwa.domain.StatisticsVo">
+        SELECT * FROM (
+            SELECT
+                  COALESCE(BROWSER_GROUP, 'Total') AS BROWSER
+                , CASE WHEN COALESCE(BROWSER_GROUP, 'Total') = 'Total' THEN 1 ELSE 0 END AS SORT
+                , COUNT(1) AS TOT
+                , ROUND(COUNT(1) / (SELECT COUNT(1)
+                                              FROM ACCESS_LOG
+                                              <choose>
+                                                  <when test="startDate != null and startDate != '' and endDate != null and endDate != '' ">
+                                                      WHERE    REQ_DATE BETWEEN REGEXP_REPLACE('[[:punct:]]', '', #{startDate}) AND REGEXP_REPLACE('[[:punct:]]', '', #{endDate})
+                                                  </when>
+                                                  <otherwise>
+                                                      WHERE    REQ_DATE BETWEEN  DATE_FORMAT(NOW(), '%Y%m%d') AND DATE_FORMAT(NOW(), '%Y%m%d')
+                                                  </otherwise>
+                                              </choose>
+                                              ) * 100, 2) AS PER
+            FROM      ACCESS_LOG
+            <choose>
+                <when test="startDate != null and startDate != '' and endDate != null and endDate != '' ">
+                    WHERE    REQ_DATE BETWEEN REGEXP_REPLACE('[[:punct:]]', '', #{startDate}) AND REGEXP_REPLACE('[[:punct:]]', '', #{endDate})
+                </when>
+                <otherwise>
+                    WHERE    REQ_DATE BETWEEN  DATE_FORMAT(NOW(), '%Y%m%d') AND DATE_FORMAT(NOW(), '%Y%m%d')
+                </otherwise>
+            </choose>
+            GROUP BY  BROWSER_GROUP
+            WITH ROLLUP
+        ) A ORDER BY SORT ASC, PER DESC
+    </select>
+
+    <!-- 통계관리/사이트통계 월별 접속브라우저 -->
+    <select id="monthAccessBrowser" resultType="kr.co.vwa.domain.StatisticsVo">
+        SELECT * FROM (
+            SELECT
+                  COALESCE(BROWSER_GROUP, 'Total') AS BROWSER
+                , CASE WHEN COALESCE(BROWSER_GROUP, 'Total') = 'Total' THEN 1 ELSE 0 END AS SORT
+                , COUNT(1) AS TOT
+                , ROUND(COUNT(1) / (SELECT COUNT(1)
+                                              FROM ACCESS_LOG
+                                              <choose>
+                                                  <when test="startDate != null and startDate != '' and endDate != null and endDate != '' ">
+                                                      WHERE    REQ_MONTH BETWEEN REGEXP_REPLACE('[[:punct:]]', '', #{startDate}) AND REGEXP_REPLACE('[[:punct:]]', '', #{endDate})
+                                                  </when>
+                                                  <otherwise>
+                                                      WHERE    REQ_MONTH BETWEEN  DATE_FORMAT(NOW(), '%Y%m') AND DATE_FORMAT(NOW(), '%Y%m')
+                                                  </otherwise>
+                                              </choose>
+                                              ) * 100, 2) AS PER
+            FROM      ACCESS_LOG
+            <choose>
+                <when test="startDate != null and startDate != '' and endDate != null and endDate != '' ">
+                    WHERE    REQ_MONTH BETWEEN REGEXP_REPLACE('[[:punct:]]', '', #{startDate}) AND REGEXP_REPLACE('[[:punct:]]', '', #{endDate})
+                </when>
+                <otherwise>
+                    WHERE    REQ_MONTH BETWEEN  DATE_FORMAT(NOW(), '%Y%m') AND DATE_FORMAT(NOW(), '%Y%m')
+                </otherwise>
+            </choose>
+            GROUP BY  BROWSER_GROUP
+            WITH ROLLUP
+        ) A ORDER BY SORT ASC, PER DESC
+    </select>
+
+    <!-- 통계관리/사이트통계 연도별 접속브라우저 -->
+    <select id="yearAccessBrowser" resultType="kr.co.vwa.domain.StatisticsVo">
+        SELECT * FROM (
+            SELECT
+                  COALESCE(BROWSER_GROUP, 'Total') AS BROWSER
+                , CASE WHEN COALESCE(BROWSER_GROUP, 'Total') = 'Total' THEN 1 ELSE 0 END AS SORT
+                , COUNT(1) AS TOT
+                , ROUND(COUNT(1) / (SELECT COUNT(1)
+                                              FROM   ACCESS_LOG
+                                              <choose>
+                                                  <when test="startDate != null and startDate != '' and endDate != null and endDate != '' ">
+                                                      WHERE    REQ_YEAR BETWEEN REGEXP_REPLACE('[[:punct:]]', '', #{startDate}) AND REGEXP_REPLACE('[[:punct:]]', '', #{endDate})
+                                                  </when>
+                                                  <otherwise>
+                                                      WHERE    REQ_YEAR BETWEEN  DATE_FORMAT(NOW(), '%Y') AND DATE_FORMAT(NOW(), '%Y')
+                                                  </otherwise>
+                                              </choose>
+                                              ) * 100, 2) AS PER
+            FROM      ACCESS_LOG
+            <choose>
+                <when test="startDate != null and startDate != '' and endDate != null and endDate != '' ">
+                    WHERE    REQ_YEAR BETWEEN REGEXP_REPLACE('[[:punct:]]', '', #{startDate}) AND REGEXP_REPLACE('[[:punct:]]', '', #{endDate})
+                </when>
+                <otherwise>
+                    WHERE    REQ_YEAR BETWEEN  DATE_FORMAT(NOW(), '%Y') AND DATE_FORMAT(NOW(), '%Y')
+                </otherwise>
+            </choose>
+            GROUP BY  BROWSER_GROUP
+            WITH ROLLUP
+        ) A ORDER BY SORT ASC, PER DESC
+    </select>
+</mapper>

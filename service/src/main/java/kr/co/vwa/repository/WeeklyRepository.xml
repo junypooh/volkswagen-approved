@@ -1,0 +1,454 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.co.vwa.repository.WeeklyRepository">
+    <resultMap id="weekly" type="kr.co.vwa.domain.WeeklyVo">
+        <collection property="weeklyDetailList" javaType="java.util.List" column="WEEK_REP_SEQ" ofType="kr.co.vwa.domain.WeeklyDetailVo" select="selectWeeklyDetailList"/>
+    </resultMap>
+    <resultMap id="weeklyDetailList" type="kr.co.vwa.domain.WeeklyDetailVo">
+        <collection property="authExhibMapList" javaType="java.util.List" column="ADM_SEQ" ofType="kr.co.vwa.domain.AuthExhibMapVo" select="selectAuthExhibMapList"/>
+    </resultMap>
+    <resultMap id="authorityList" type="kr.co.vwa.domain.AuthorityVo">
+        <id property="admSeq" column="ADM_SEQ"/>
+        <collection property="list" column="ADM_SEQ" ofType="kr.co.vwa.domain.AuthExhibMapVo" select="selectAuthExhibMapList" />
+    </resultMap>
+
+    <!-- 통계관리/weekly report/목록 전체 개수 조회 -->
+    <select id="selectWeeklyListTotalCount" parameterType="map" resultType="java.lang.Integer">
+        SELECT
+        COUNT(*) AS COUNT
+        FROM WEEKLY_REPORT
+        WHERE DB_STS = 'A'
+    </select>
+
+    <!-- 통계관리/weekly report/목록 전체 조회 -->
+    <select id="WeeklyListSelect" parameterType="map" resultType="kr.co.vwa.domain.WeeklyVo">
+        SELECT WEEK_REP_SEQ,
+            CATEGORY_CD,
+            TITLE,
+            DATE_FORMAT(STR_DATE, '%Y.%m.%d') AS STRDATE,
+            DATE_FORMAT(END_DATE, '%Y.%m.%d') AS ENDDATE,
+            DB_STS,
+            CRE_USER,
+            CRE_DATE,
+            IFNULL(UPD_USER, CRE_USER ) AS UPDUSER,
+        DATE_FORMAT(IFNULL(UPD_DATE, CRE_DATE ), '%Y.%m.%d %H:%i') AS UPDDATE,
+            <![CDATA[
+            CASE    WHEN STR_DATE IS NULL THEN 3
+                    WHEN STR_DATE > DATE_FORMAT(NOW(), '%Y-%m-%d') THEN 0
+                    WHEN END_DATE < DATE_FORMAT(NOW(), '%Y-%m-%d') THEN 2
+                    WHEN DATE_FORMAT(NOW(), '%Y-%m-%d') BETWEEN STR_DATE AND END_DATE THEN 1
+            ELSE NULL
+            END AS FLAG
+            ]]>
+        FROM WEEKLY_REPORT
+        WHERE DB_STS='A'
+        ORDER BY IFNULL(UPD_DATE, CRE_DATE) DESC
+    </select>
+
+    <!-- 통계관리/weekly report/상세 weekly report 정보조회 -->
+    <select id="selectWeekly" parameterType="kr.co.vwa.domain.WeeklyVo" resultMap="weekly">
+        SELECT
+        WEEK_REP_SEQ
+        , WEEK_REP_SEQ AS weekRepSeq
+        , CATEGORY_CD
+        , TITLE
+        , STR_DATE
+        , END_DATE
+        <![CDATA[
+            , CASE WHEN STR_DATE IS NULL THEN NULL
+                   WHEN STR_DATE > DATE_FORMAT(NOW(), '%Y-%m-%d') THEN 'reservation'
+                   WHEN END_DATE < DATE_FORMAT(NOW(), '%Y-%m-%d') THEN 'end'
+                   WHEN DATE_FORMAT(NOW(), '%Y-%m-%d') BETWEEN STR_DATE AND END_DATE THEN 'ing'
+                   ELSE NULL
+              END AS STATUS
+            ]]>
+        , CRE_USER
+        , CRE_DATE
+        , UPD_USER
+        , UPD_DATE
+        FROM WEEKLY_REPORT
+        WHERE WEEK_REP_SEQ = #{weekRepSeq}
+        AND DB_STS = 'A'
+    </select>
+
+    <!-- 통계관리/weekly report/상세 detail 리스트 조회 -->
+    <select id="selectWeeklyDetailList" resultMap="weeklyDetailList">
+        SELECT
+        A.WEEK_REP_SEQ
+        , A.ADM_SEQ
+        , A.ADM_SEQ AS admSeq
+        , A.STR_DATE
+        , A.END_DATE
+        <![CDATA[
+            , CASE WHEN STR_DATE IS NULL THEN NULL
+                   WHEN STR_DATE > DATE_FORMAT(NOW(), '%Y-%m-%d') THEN 'reservation'
+                   WHEN END_DATE < DATE_FORMAT(NOW(), '%Y-%m-%d') THEN 'end'
+                   WHEN DATE_FORMAT(NOW(), '%Y-%m-%d') BETWEEN STR_DATE AND END_DATE THEN 'ing'
+                   ELSE NULL
+              END AS STATUS
+            ]]>
+        , A.FILE_NM
+        , A.UPLOAD_DATE
+        , B.ID
+        FROM WEEKLY_REPORT_DETAIL A
+        , ADMIN_MNG B
+        WHERE A.ADM_SEQ = B.ADM_SEQ
+        AND A.WEEK_REP_SEQ = #{weekRepSeq}
+        AND A.DB_STS = 'A'
+        AND B.DB_STS = 'A'
+        AND B.USE_YN = 'Y'
+    </select>
+
+    <!-- 통계관리/weekly report 관리자 별 연결 전시장 조회 -->
+    <select id="selectAuthExhibMapList" resultType="kr.co.vwa.domain.AuthExhibMapVo">
+        SELECT
+        B.TYPE
+        , B.STORE_NM
+        , A.ADM_SEQ
+        , A.EXH_HALL_SEQ
+        FROM ADMIN_EXHIBITION_HALL_MAP A
+        , EXHIBITION_HALL B
+        WHERE A.EXH_HALL_SEQ = B.EXH_HALL_SEQ
+        AND A.ADM_SEQ = #{admSeq}
+        AND A.DB_STS = 'A'
+        AND B.DB_STS = 'A'
+        AND B.EXPS_YN = 'Y'
+    </select>
+
+    <!-- 통계관리/weekly report/모달팝업 관리자 전체 조회 -->
+    <select id="selectBranchAuthList" parameterType="kr.co.vwa.domain.WeeklyVo" resultMap="authorityList">
+        SELECT
+                A.ADM_SEQ
+              , A.ID
+              , A.MEMO
+              , B.AUTH
+        FROM    ADMIN_MNG A
+              , (
+                    SELECT
+                            B.ADM_SEQ, FN_USER_AUTH(B.ADM_SEQ) AS AUTH
+                    FROM    ADMIN_EXHIBITION_HALL_MAP B
+                          , EXHIBITION_HALL C
+                    WHERE B.EXH_HALL_SEQ = C.EXH_HALL_SEQ
+                    AND   B.DB_STS = 'A'
+                    AND   C.DB_STS = 'A'
+                    AND   C.EXPS_YN = 'Y'
+                    <if test="searchText != null and searchText != ''">
+                        AND C.STORE_NM LIKE CONCAT('%',#{searchText},'%')
+                    </if>
+                    GROUP BY B.ADM_SEQ
+                ) B
+        WHERE A.ADM_SEQ = B.ADM_SEQ
+        AND A.AUTH_TYPE = 'Branch'
+        AND B.AUTH = 'ADMIN'
+        AND A.DB_STS = 'A'
+        AND A.USE_YN = 'Y'
+    </select>
+
+    <!-- 통계관리/weekly report/상세 weekly report 수정 -->
+    <update id="updateWeekly" parameterType="kr.co.vwa.domain.WeeklyVo">
+        UPDATE WEEKLY_REPORT SET
+              CATEGORY_CD = #{categoryCd}
+            , TITLE = #{title}
+            , STR_DATE = #{strDate}
+            , END_DATE = #{endDate}
+            , UPD_USER = #{updUser}
+            , UPD_DATE = NOW()
+        WHERE WEEK_REP_SEQ = #{weekRepSeq}
+    </update>
+
+    <!-- 통계관리/weekly report/상세 detail 삭제 -->
+    <update id="deleteWeeklyDetail" parameterType="kr.co.vwa.domain.WeeklyDetailVo">
+        UPDATE WEEKLY_REPORT_DETAIL SET
+          STR_DATE = NULL
+        , END_DATE = NULL
+        , FILE_NM = NULL
+        , UPLOAD_DATE = NULL
+        , DB_STS = 'D'
+        , UPD_USER = #{updUser}
+        , UPD_DATE = NOW()
+        WHERE WEEK_REP_SEQ = #{weekRepSeq}
+        AND ADM_SEQ = #{admSeq}
+    </update>
+
+    <!-- 통계관리/weekly report/상세 업로드했던 데이터 삭제 -->
+    <update id="deleteWeeklyData" parameterType="kr.co.vwa.domain.WeeklyDetailVo">
+        UPDATE WEEKLY_REPORT_DATA SET
+              DB_STS = 'D'
+            , UPD_USER = #{updUser}
+            , UPD_DATE = NOW()
+        WHERE WEEK_REP_SEQ = #{weekRepSeq}
+        AND ADM_SEQ = #{admSeq}
+    </update>
+
+    <!-- 통계관리/weekly report/상세 detail 등록/수정 -->
+    <insert id="upsertWeeklyDetail" parameterType="kr.co.vwa.domain.WeeklyDetailVo">
+        INSERT INTO WEEKLY_REPORT_DETAIL (
+              WEEK_REP_SEQ
+            , ADM_SEQ
+            , STR_DATE
+            , END_DATE
+            , DB_STS
+            , CRE_USER
+            , CRE_DATE
+        ) VALUES (
+              #{weekRepSeq}
+            , #{admSeq}
+            , #{strDate}
+            , #{endDate}
+            , 'A'
+            , #{creUser}
+            , NOW()
+        ) ON DUPLICATE KEY UPDATE
+              STR_DATE = #{strDate}
+            , END_DATE = #{endDate}
+            , DB_STS = 'A'
+            , UPD_USER = #{creUser}
+            , UPD_DATE = NOW()
+    </insert>
+
+    <!-- 통계관리/weekly report/weekly report 등록 -->
+    <insert id="registeWeekly" parameterType="kr.co.vwa.domain.WeeklyVo" useGeneratedKeys="true" keyProperty="weekRepSeq">
+        INSERT INTO WEEKLY_REPORT(CATEGORY_CD,
+                                    TITLE,STR_DATE,END_DATE,
+                                    DB_STS,
+                                    CRE_USER,
+                                    CRE_DATE)
+        VALUES(
+            #{categoryCd},
+            #{title},
+            #{strDate},
+            #{endDate},
+            'A',
+            #{creUser},
+            NOW()
+        )
+    </insert>
+
+    <!-- 통계관리/weekly report/weekly report detail 등록 -->
+    <insert id="registeWeeklyDetail" parameterType="kr.co.vwa.domain.WeeklyDetailVo">
+        INSERT INTO WEEKLY_REPORT_DETAIL(WEEK_REP_SEQ,
+                                        ADM_SEQ,
+                                        STR_DATE,
+                                        END_DATE,
+                                        DB_STS,
+                                        CRE_USER,
+                                        CRE_DATE)
+        VALUES(
+            #{weekRepSeq},
+            #{admSeq},
+            #{strDate},
+            #{endDate},
+                'A',
+            #{creUser},
+                NOW()
+        )
+    </insert>
+
+    <insert id="upsertModalSave" parameterType="kr.co.vwa.domain.WeeklyDetailVo">
+        INSERT INTO WEEKLY_REPORT_DETAIL (
+              WEEK_REP_SEQ
+            , ADM_SEQ
+            , STR_DATE
+            , END_DATE
+            , DB_STS
+            , CRE_USER
+            , CRE_DATE
+        ) VALUES (
+              #{weekRepSeq}
+            , #{admSeq}
+            , #{strDate}
+            , #{endDate}
+            , 'A'
+            , #{creUser}
+            , NOW()
+        ) ON DUPLICATE KEY UPDATE
+              STR_DATE = CASE WHEN STR_DATE IS NULL THEN #{strDate} ELSE STR_DATE END
+            , END_DATE = CASE WHEN END_DATE IS NULL THEN #{endDate} ELSE END_DATE END
+            , DB_STS = 'A'
+            , UPD_USER = #{creUser}
+            , UPD_DATE = NOW()
+    </insert>
+
+    <!-- 통계관리/weekly report/상세 weekly 삭제 -->
+    <update id="deleteWeekly" parameterType="kr.co.vwa.domain.WeeklyVo">
+        UPDATE WEEKLY_REPORT SET
+              DB_STS = 'D'
+            , UPD_USER = #{updUser}
+            , UPD_DATE = NOW()
+        WHERE WEEK_REP_SEQ = #{weekRepSeq}
+    </update>
+
+    <!-- 통계관리/weekly report/상세 삭제할 weekly의 모든 detail 삭제 -->
+    <update id="deleteAllWeeklyDetail" parameterType="kr.co.vwa.domain.WeeklyVo">
+        UPDATE WEEKLY_REPORT_DETAIL SET
+              STR_DATE = NULL
+            , END_DATE = NULL
+            , FILE_NM = NULL
+            , UPLOAD_DATE = NULL
+            , DB_STS = 'D'
+            , UPD_USER = #{updUser}
+            , UPD_DATE = NOW()
+        WHERE WEEK_REP_SEQ = #{weekRepSeq}
+          AND DB_STS = 'A'
+    </update>
+
+    <!-- 통계관리/weekly report/상세 삭제할 weekly의 모든 data 삭제 -->
+    <update id="deleteAllWeeklyData" parameterType="kr.co.vwa.domain.WeeklyVo">
+        UPDATE WEEKLY_REPORT_DATA SET
+              DB_STS = 'D'
+            , UPD_USER = #{updUser}
+            , UPD_DATE = NOW()
+        WHERE WEEK_REP_SEQ = #{weekRepSeq}
+          AND DB_STS = 'A'
+    </update>
+
+    <!-- 통계관리/weekly report/상세 파일첨부 weeklyDetail 수정 -->
+    <update id="updateWeeklyDetail" parameterType="kr.co.vwa.domain.WeeklyDetailVo">
+        UPDATE WEEKLY_REPORT_DETAIL SET
+          FILE_NM = #{fileNm}
+        , UPLOAD_DATE = NOW()
+        , UPD_USER = #{updUser}
+        , UPD_DATE = NOW()
+        WHERE WEEK_REP_SEQ = #{weekRepSeq}
+        AND ADM_SEQ = #{admSeq}
+    </update>
+
+    <!-- 통계관리/weekly report/상세 파일첨부 weeklyData 저장 -->
+    <insert id="saveWeeklyData">
+        INSERT INTO WEEKLY_REPORT_DATA
+        (
+              WEEK_REP_SEQ
+            , ADM_SEQ
+            , CHAS_NO
+            , TYPE
+            , DEAL_CORP_NM
+            , EXH_HALL_NM
+            , BRAND
+            , MODEL_GROUP
+            , MODEL_NM
+            , CRE_NO
+            , PROD_YEAR
+            , DRIVE_DIST
+            , FIRST_CRE_DATE
+            , BUY_DATE
+            , SELL_DATE
+            , INFLOW_PATH
+            , SELL_TYPE
+            , BUY_TYPE
+            , SELL_COST
+            , BUY_COST
+            , SERVICING_COST
+            , COMMISSION
+            , COMMERCIALIZE_COST
+            , KEEP_COST
+            , CONVEY_COST
+            , WARR_INSUR_COST
+            , TRANSFER_FEE
+            , BUY_PROGRESS
+            , BUY_RESPONSIBILITY
+            , SELL_EMPL
+            , CUSTOMER_TYPE
+            , FINANCE_PROD_TYPE
+            , FINANCE_CORP
+            , DB_STS
+            , CRE_USER
+            , CRE_DATE
+        ) VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+                  #{item.weekRepSeq}
+                , #{item.admSeq}
+                , #{item.chasNo}
+                , #{item.type}
+                , #{item.dealCorpNm}
+                , #{item.exhHallNm}
+                , #{item.brand}
+                , #{item.modelGroup}
+                , #{item.modelNm}
+                , #{item.creNo}
+                , #{item.prodYear}
+                , #{item.driveDist}
+                , #{item.firstCreDate}
+                , #{item.buyDate}
+                , #{item.sellDate}
+                , #{item.inflowPath}
+                , #{item.sellType}
+                , #{item.buyType}
+                , #{item.sellCost}
+                , #{item.buyCost}
+                , #{item.servicingCost}
+                , #{item.commission}
+                , #{item.commercializeCost}
+                , #{item.keepCost}
+                , #{item.conveyCost}
+                , #{item.warrInsurCost}
+                , #{item.transferFee}
+                , #{item.buyProgress}
+                , #{item.buyResponsibility}
+                , #{item.sellEmpl}
+                , #{item.customerType}
+                , #{item.financeProdType}
+                , #{item.financeCorp}
+                , 'A'
+                , #{item.creUser}
+                , NOW()
+            )
+        </foreach>
+    </insert>
+
+    <!-- 통계관리/weekly report/상세 엑셀 다운로드 -->
+    <select id="excelDownload" parameterType="kr.co.vwa.domain.WeeklyVo" resultType="kr.co.vwa.domain.WeeklyDataVo">
+        SELECT CHAS_NO,
+                TYPE,
+                DEAL_CORP_NM,
+                EXH_HALL_NM,
+                BRAND,
+
+                MODEL_GROUP,
+                MODEL_NM,
+                CRE_NO,
+                PROD_YEAR,
+                DRIVE_DIST,
+
+                FIRST_CRE_DATE,
+                BUY_DATE,
+                SELL_DATE,
+                INFLOW_PATH,
+                SELL_TYPE,
+
+                BUY_TYPE,
+                SELL_COST,
+                BUY_COST,
+                SERVICING_COST,
+                COMMISSION,
+
+                COMMERCIALIZE_COST,
+                KEEP_COST,
+                CONVEY_COST,
+                WARR_INSUR_COST,
+                TRANSFER_FEE,
+
+                BUY_PROGRESS,
+                BUY_RESPONSIBILITY,
+                SELL_EMPL,
+                CUSTOMER_TYPE,
+                FINANCE_PROD_TYPE,
+
+                FINANCE_CORP
+        FROM WEEKLY_REPORT_DATA
+        WHERE WEEK_REP_SEQ=#{weekRepSeq}
+        AND DB_STS='A'
+        ORDER BY WEEK_REP_SEQ,ADM_SEQ
+    </select>
+
+    <!-- 통계관리/weekly report/상세 Detail 파일명삭제 -->
+    <update id="updateFileName" parameterType="kr.co.vwa.domain.WeeklyDetailVo">
+        UPDATE WEEKLY_REPORT_DETAIL SET
+          FILE_NM = NULL
+        , UPLOAD_DATE = NULL
+        , UPD_USER = #{updUser}
+        , UPD_DATE = NOW()
+        WHERE WEEK_REP_SEQ = #{weekRepSeq}
+        AND ADM_SEQ = #{admSeq}
+    </update>
+</mapper>

@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.co.vwa.repository.PopupRepository">
+<resultMap id="popupFile" type="kr.co.vwa.domain.PopupVo">
+    <association property="file" column="IMG_SEQ" javaType="kr.co.vwa.domain.FileVo" select="selectFile" />
+</resultMap>
+
+    <!--팝업관리/목록 전체 조회-->
+    <select id="popupList" parameterType="java.util.Map" resultMap="popupFile">
+        SELECT POPUP_SEQ,
+                TITLE,
+                IMG_SEQ,
+                DATE_FORMAT(STR_DATE, '%Y.%m.%d') AS STRDATE,
+                DATE_FORMAT(END_DATE, '%Y.%m.%d') AS ENDDATE,
+                UPD_USER,
+                DATE_FORMAT(UPD_DATE, '%Y.%m.%d %H:%i') AS UPDDATE,
+                EXPS_YN,
+                <![CDATA[
+                CASE    WHEN STR_DATE IS NULL THEN 3
+                        WHEN STR_DATE > DATE_FORMAT(NOW(), '%Y-%m-%d') THEN 0
+                        WHEN END_DATE < DATE_FORMAT(NOW(), '%Y-%m-%d') THEN 2
+                        WHEN DATE_FORMAT(NOW(), '%Y-%m-%d') BETWEEN STR_DATE AND END_DATE THEN 1
+                ELSE NULL
+                END AS FLAG
+                ]]>
+        FROM POPUP
+        WHERE DB_STS='A'
+        <if test="expsYn != null and expsYn != ''">
+            AND EXPS_YN ='Y'
+        </if>
+        <if test="query != null and query != ''">
+            AND (TITLE LIKE CONCAT('%',#{query},'%'))
+        </if>
+        ORDER BY EXPS_YN DESC, IFNULL(UPD_DATE, CRE_DATE) DESC
+        LIMIT #{defaultContentsCount} OFFSET #{limitRow}
+    </select>
+
+    <!--파일 이미지 조회-->
+    <select id="selectFile" resultType="kr.co.vwa.domain.FileVo">
+        SELECT
+            FILE_SEQ
+            , FILE_NM
+            , FILE_PATH
+            , FILE_SIZE
+            , FILE_EXT
+            , ORI_FILE_NM
+            , CRE_DATE
+            , CRE_USER
+        FROM 	FILE_INFO
+        WHERE	FILE_SEQ = #{imgSeq}
+    </select>
+
+    <!--팝업관리/목록 전체 개수 조회-->
+    <select id="popupTotalCount" parameterType="java.util.Map" resultType="java.lang.Integer">
+        SELECT COUNT(*) AS COUNT
+        FROM POPUP
+        WHERE DB_STS='A'
+        <if test="expsYn != null and expsYn != ''">
+            AND EXPS_YN = 'Y'
+        </if>
+        <if test="query != null and query != ''">
+            AND (TITLE LIKE CONCAT('%',#{query},'%'))
+        </if>
+    </select>
+
+    <!--팝업관리/등록-->
+    <insert id="popupRegiste" parameterType="kr.co.vwa.domain.PopupVo" useGeneratedKeys="true" keyProperty="popupSeq">
+        INSERT INTO POPUP(
+                TITLE,
+                LINK_URL,
+                NEW_WIN_YN,
+                IMG_SEQ,
+                EXPS_YN,
+                STR_DATE,
+                END_DATE,
+                DB_STS,
+                CRE_USER,
+                CRE_DATE,
+                UPD_USER,
+                UPD_DATE)
+        VALUES( #{title},
+                #{linkUrl},
+                <choose>
+                    <when test="newWinYn != null and newWinYn != ''">
+                        'Y',
+                    </when>
+                    <otherwise>
+                        'N',
+                    </otherwise>
+                </choose>
+                #{imgSeq},
+                <choose>
+                    <when test="expsYn != null and expsYn != ''">
+                        'Y',
+                    </when>
+                    <otherwise>
+                        'N',
+                    </otherwise>
+                </choose>
+                #{strDate},
+                #{endDate},
+                'A',
+                #{updUser},
+                NOW(),
+                #{updUser},
+                NOW())
+    </insert>
+
+    <!--팝업관리/목록 노출여부 수정-->
+    <update id="popupExpsYnUpdate" parameterType="kr.co.vwa.domain.PopupVo">
+        UPDATE POPUP
+        SET EXPS_YN=#{expsYn},
+                UPD_DATE=NOW(),
+                UPD_USER=#{updUser}
+        WHERE POPUP_SEQ=#{popupSeq}
+    </update>
+
+    <!--팝업관리/상세 조회-->
+    <select id="popupDetailVo" parameterType="kr.co.vwa.domain.PopupVo" resultMap="popupFile">
+            SELECT POPUP_SEQ,
+                    TITLE,
+                    LINK_URL,
+                    NEW_WIN_YN,
+                    IMG_SEQ,
+                    EXPS_YN,
+                    STR_DATE,
+                    END_DATE,
+                    DB_STS,
+                    CRE_USER,
+                    CRE_DATE,
+                    UPD_USER,
+                    UPD_DATE
+            FROM POPUP
+            WHERE DB_STS='A'
+            AND POPUP_SEQ=#{popupSeq}
+    </select>
+
+    <!--팝업관리/상세 삭제-->
+    <update id="popupDelete" parameterType="kr.co.vwa.domain.PopupVo">
+        UPDATE POPUP
+        SET DB_STS='D'
+        WHERE POPUP_SEQ=#{popupSeq}
+    </update>
+
+    <!--팝업관리/상세 수정-->
+    <update id="updatePopup" parameterType="kr.co.vwa.domain.PopupVo">
+        UPDATE POPUP
+        SET TITLE=#{title},
+            LINK_URL=#{linkUrl},
+            <choose>
+                <when test="newWinYn != null and newWinYn != ''">
+                    NEW_WIN_YN='Y',
+                </when>
+                <otherwise>
+                    NEW_WIN_YN='N',
+                </otherwise>
+            </choose>
+            IMG_SEQ=#{imgSeq},
+            STR_DATE=#{strDate},
+            END_DATE=#{endDate},
+            <choose>
+                <when test="expsYn != null and expsYn != ''">
+                    EXPS_YN='Y',
+                </when>
+                <otherwise>
+                    EXPS_YN='N',
+                </otherwise>
+            </choose>
+            UPD_USER=#{updUser},
+            UPD_DATE=NOW()
+        WHERE POPUP_SEQ=#{popupSeq}
+    </update>
+
+    <!--팝업 전체 조회(프론트용)-->
+    <select id="selectFrontPopupList" resultMap="popupFile">
+        SELECT
+            POPUP_SEQ,
+            TITLE,
+            IMG_SEQ,
+            LINK_URL,
+            NEW_WIN_YN,
+            DATE_FORMAT(STR_DATE, '%Y.%m.%d') AS STRDATE,
+            DATE_FORMAT(END_DATE, '%Y.%m.%d') AS ENDDATE,
+            UPD_USER,
+            DATE_FORMAT(UPD_DATE, '%Y.%m.%d %H:%i') AS UPDDATE,
+            EXPS_YN
+        FROM POPUP
+        WHERE DB_STS = 'A'
+        AND EXPS_YN ='Y'
+        ORDER BY IFNULL(UPD_DATE, CRE_DATE) DESC
+    </select>
+
+    <!-- 팝업관리/목록, 상세 노출여부 Y인 팝업개수 -->
+    <select id="popupExpsYCount" resultType="java.lang.Integer">
+        SELECT
+            COUNT(*)
+        FROM POPUP
+        WHERE DB_STS = 'A'
+          AND EXPS_YN = 'Y'
+        <if test="popupSeq != null and popupSeq != ''">
+            <![CDATA[
+              AND POPUP_SEQ <> #{popupSeq}
+            ]]>
+        </if>
+    </select>
+</mapper>

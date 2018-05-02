@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.co.vwa.repository.SellCarModelRepository">
+
+    <!-- 매물차량 등록 -->
+    <insert id="insertSellCarModel">
+        INSERT INTO SELL_CAR_MODEL
+         (
+            CAR_NO
+          , MAK
+          , MODEL
+          , DETAIL_MODEL
+          , CAR_TYPE
+          , FUEL
+          , RATING
+          , DETAIL_RATING
+          , IMPO_TYPE
+          , CERT_YN
+          , PROD_YEAR
+          , FROM_YEAR
+          , DISP
+          , GEAR
+          , COLOR
+          , DRIVE_DIST
+          , HITS
+          , DB_STS
+          , CRE_USER
+          , CRE_DATE
+         ) VALUES (
+            #{carNo}
+          , #{mak}
+          , #{model}
+          , #{detailModel}
+          , #{carType}
+          , #{fuel}
+          , #{rating}
+          , #{detailRating}
+          , #{impoType}
+          , #{certYn}
+          , #{prodYear}
+          , #{fromYear}
+          , #{disp}
+          , #{gear}
+          , #{color}
+          , #{driveDist}
+          , 0
+          , 'A'
+          , #{creUser}
+          , NOW()
+         )
+    </insert>
+
+</mapper>

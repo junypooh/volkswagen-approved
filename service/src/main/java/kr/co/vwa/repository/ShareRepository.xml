@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.co.vwa.repository.ShareRepository">
+
+    <!-- 공유 이력 생성 -->
+    <insert id="insertShareHistory">
+        INSERT INTO SHARING_LOG
+         (
+            REQ_DTM
+          , REQ_YEAR
+          , REQ_MONTH
+          , REQ_DATE
+          , REQ_TIME
+          , PLATFORM
+          , DEVICE
+          , OS
+          , OS_GROUP
+          , BROWSER
+          , BROWSER_GROUP
+          , CRE_DATE
+         ) VALUES (
+            DATE_FORMAT(now(), '%Y%m%d%H%i%s')
+          , DATE_FORMAT(now(), '%Y')
+          , DATE_FORMAT(now(), '%Y%m')
+          , DATE_FORMAT(now(), '%Y%m%d')
+          , DATE_FORMAT(now(), '%H%i%s')
+          , #{platform}
+          , #{device}
+          , #{os}
+          , #{osGroup}
+          , #{browser}
+          , #{browserGroup}
+          , NOW()
+         )
+    </insert>
+
+    <!-- 이메일 동의 이력 생성 -->
+    <insert id="insertEmailAgreeHistory" parameterType="kr.co.vwa.domain.EmailAgreeVo">
+         INSERT INTO EMAIL_AGREE_HIS
+         (
+            TYPE
+          , SEND_DAY
+          , AGREE1
+          , AGREE2
+          , AGREE3
+         ) VALUES (
+            #{type}
+          , NOW()
+          , #{agree1}
+          , #{agree2}
+          , #{agree3}
+         )
+    </insert>
+</mapper>

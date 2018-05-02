@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.co.vwa.repository.FaqRepository">
+
+    <!-- 자주하는질문관리/목록 자주하는질문 목록 조회 -->
+    <select id="selectFaqList" parameterType="java.util.Map" resultType="kr.co.vwa.domain.FaqVo">
+        SELECT
+              FAQ_SEQ
+            , CATEGORY_CD
+            , TITLE
+            , CTNT
+            , EXPS_YN
+            , FIX_YN
+            , ORD_NO
+            , IFNULL(UPD_USER, CRE_USER) AS UPD_USER
+            , IFNULL(UPD_DATE, CRE_DATE) AS UPD_DATE
+        FROM FAQ
+        WHERE DB_STS = 'A'
+        <if test="fixYn != null and fixYn != ''">
+            AND FIX_YN = #{fixYn}
+        </if>
+        <if test="expsYn != null and expsYn != ''">
+            AND EXPS_YN = #{expsYn}
+        </if>
+        <if test="categoryCd != null and categoryCd != ''">
+            AND CATEGORY_CD = #{categoryCd}
+        </if>
+        <if test="searchText != null and searchText != ''">
+            AND (TITLE LIKE CONCAT('%',#{searchText},'%') OR CTNT LIKE CONCAT('%',#{searchText},'%'))
+        </if>
+        ORDER BY ORD_NO ASC
+    </select>
+
+    <!-- 자주하는질문관리/목록 노출여부 수정 -->
+    <update id="updateExpsYn" parameterType="kr.co.vwa.domain.FaqVo">
+        UPDATE FAQ SET
+          EXPS_YN = #{expsYn}
+        , UPD_USER = #{updUser}
+        , UPD_DATE = NOW()
+        WHERE FAQ_SEQ = #{faqSeq}
+    </update>
+
+    <!-- 자주하는질문관리/목록 정렬저장 -->
+    <update id="updateExpsdNo" parameterType="kr.co.vwa.domain.FaqVo">
+        UPDATE FAQ SET
+          ORD_NO = #{ordNo}
+        , UPD_USER = #{updUser}
+        , UPD_DATE = NOW()
+        WHERE FAQ_SEQ = #{faqSeq}
+    </update>
+
+    <!-- 자주하는질문관리/상세 자주하는질문정보 조회 -->
+    <select id="selectFaq" parameterType="kr.co.vwa.domain.FaqVo" resultType="kr.co.vwa.domain.FaqVo">
+        SELECT
+              FAQ_SEQ
+            , CATEGORY_CD
+            , TITLE
+            , CTNT
+            , EXPS_YN
+            , FIX_YN
+        FROM FAQ
+        WHERE FAQ_SEQ = #{faqSeq}
+          AND DB_STS = 'A'
+    </select>
+
+    <!-- 자주하는질문관리/상세 자주하는질문정보 등록 -->
+    <insert id="insertFaq" parameterType="kr.co.vwa.domain.FaqVo" useGeneratedKeys="true" keyProperty="faqSeq">
+        INSERT INTO FAQ
+        (
+              CATEGORY_CD
+            , TITLE
+            , CTNT
+            , EXPS_YN
+            , FIX_YN
+            , ORD_NO
+            , DB_STS
+            , CRE_USER
+            , CRE_DATE
+        ) SELECT
+              #{categoryCd}
+            , #{title}
+            , #{ctnt}
+            , #{expsYn}
+            , #{fixYn}
+            , COUNT(*)
+            , 'A'
+            , #{creUser}
+            , NOW()
+        FROM FAQ
+    </insert>
+
+    <!-- 자주하는질문관리/상세 자주하는질문정보 수정 -->
+    <update id="updateFaq" parameterType="kr.co.vwa.domain.FaqVo">
+        UPDATE FAQ SET
+              CATEGORY_CD = #{categoryCd}
+            , TITLE = #{title}
+            , CTNT = #{ctnt}
+            , EXPS_YN = #{expsYn}
+            , FIX_YN = #{fixYn}
+            , UPD_USER = #{updUser}
+            , UPD_DATE = NOW()
+        WHERE FAQ_SEQ = #{faqSeq}
+    </update>
+
+    <!-- 자주하는질문관리/상세 자주하는질문정보 삭제 -->
+    <update id="deleteFaq" parameterType="kr.co.vwa.domain.FaqVo">
+        UPDATE FAQ SET
+          DB_STS = 'D'
+        , UPD_USER = #{updUser}
+        , UPD_DATE = NOW()
+        WHERE FAQ_SEQ = #{faqSeq}
+    </update>
+
+    <select id="selectFrontFaqList" parameterType="java.util.Map" resultType="kr.co.vwa.domain.FaqVo">
+        SELECT
+        *
+            FROM (SELECT
+                  FAQ_SEQ
+                , CATEGORY_CD
+                , TITLE
+                , CTNT
+                , EXPS_YN
+                , FIX_YN
+                , ORD_NO
+                , IFNULL(UPD_USER, CRE_USER) AS UPD_USER
+                , IFNULL(UPD_DATE, CRE_DATE) AS UPD_DATE
+            FROM FAQ
+            WHERE DB_STS = 'A'
+              AND EXPS_YN = 'Y'
+              AND FIX_YN = #{fixYn}
+            ORDER BY ORD_NO ASC
+            <if test="fixYn == 'Y'.toString()">
+                LIMIT 0, 10
+            </if>
+            ) A
+        WHERE 1=1
+        <if test="categoryCd != null and categoryCd != ''">
+            AND CATEGORY_CD = #{categoryCd}
+        </if>
+    </select>
+
+    <!-- 자주하는질문관리/상세, 등록 상단고정게시물 수 -->
+    <select id="selectFaqFixYCount" resultType="java.lang.Integer">
+        SELECT
+            COUNT(*)
+        FROM FAQ
+        WHERE DB_STS = 'A'
+          AND FIX_YN = 'Y'
+        <if test="faqSeq != null and faqSeq != ''">
+            <![CDATA[
+              AND FAQ_SEQ <> #{faqSeq}
+            ]]>
+        </if>
+    </select>
+
+    <!-- front 자주하는질문 유형 그룹핑 -->
+    <select id="selectFaqTypeList" resultType="kr.co.vwa.domain.FaqVo">
+        SELECT
+          CATEGORY_CD
+        , CASE CATEGORY_CD WHEN 'A1001' THEN '문의관련'
+                           WHEN 'A1002' THEN '사이트이용'
+                           WHEN 'A1003' THEN '구매가이드'
+          END AS CATEGORY_NM
+        FROM FAQ
+        WHERE DB_STS = 'A'
+        AND EXPS_YN = 'Y'
+        GROUP BY CATEGORY_CD
+    </select>
+</mapper>

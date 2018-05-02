@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.co.vwa.repository.DashBoardRepository">
+
+    <!-- 작성중인 매물 / 심사대기 매물 (그룹운영자 권한) -->
+    <select id="selectOperatorData" resultType="kr.co.vwa.domain.DashBoardVo">
+        SELECT
+            A.SELL_CAR_SEQ
+            , A.CAR_SELL_NO
+            , A.MAK
+            , A.MODEL
+            , A.DETAIL_MODEL
+            , A.FROM_YEAR
+            , B.SELL_PRICE
+            , A.CERT_YN
+            , C.EXH_HALL_SEQ
+            , D.TYPE
+            , CASE WHEN D.TYPE = 'Klasse Auto' THEN 'KA'
+                WHEN D.TYPE = 'Meister Motors' THEN 'MM'
+                WHEN D.TYPE = 'Ucaro Automobile' THEN 'UA'
+                WHEN D.TYPE = 'GioHaus' THEN 'GH'
+                WHEN D.TYPE = <![CDATA[ 'G&amp;B Automobilee' ]]> THEN 'GA' END HALL_TYPE
+            , D.STORE_NM
+            , E.ID
+        FROM SELL_CAR_MODEL A
+        LEFT JOIN PRICE_TROUBLE_HISTORY B
+        ON A.SELL_CAR_SEQ = B.SELL_CAR_SEQ AND B.DB_STS = 'A'
+        LEFT JOIN DISCRIPTION C
+        ON A.SELL_CAR_SEQ = C.SELL_CAR_SEQ AND C.DB_STS = 'A'
+        LEFT JOIN EXHIBITION_HALL D
+        ON C.EXH_HALL_SEQ = D.EXH_HALL_SEQ AND D.DB_STS = 'A'
+        INNER JOIN ADMIN_MNG E
+        ON A.CRE_ADM_SEQ = E.ADM_SEQ  AND E.DB_STS = 'A'
+        <if test="type eq 'temp'.toString()">
+            INNER JOIN CAR_SELL_STAT_HIS F
+            ON A.SELL_CAR_SEQ = F.SELL_CAR_SEQ
+            AND F.CAR_STAT_CD = 'D1001'
+            AND F.DB_STS = 'A'  -- 승인대기
+        </if>
+        WHERE A.DB_STS = 'A'
+        <if test="type eq 'evaluate'.toString()">
+            AND NOT EXISTS ( SELECT 1 FROM CAR_SELL_STAT_HIS WHERE SELL_CAR_SEQ = A.SELL_CAR_SEQ) -- 임시저장
+        </if>
+        AND C.EXH_HALL_SEQ IN (
+            SELECT EXH_HALL_SEQ FROM ADMIN_EXHIBITION_HALL_MAP WHERE ADM_SEQ = #{admSeq} AND AUTH = 'OPERATOR' AND DB_STS = 'A'
+        )
+        ORDER BY A.CAR_SELL_NO
+    </select>
+
+    <!-- 판매중인 매물 (그룹관리자/슈퍼관리자 권한) -->
+    <select id="selectNowSellingCount" resultType="Integer">
+        SELECT
+            COUNT(1)
+        FROM EXHIBITION_HALL A
+        INNER JOIN DISCRIPTION B
+        ON A.EXH_HALL_SEQ = B.EXH_HALL_SEQ
+        INNER JOIN   CAR_SELL_STAT_HIS C
+        ON B.SELL_CAR_SEQ = C.SELL_CAR_SEQ
+        AND C.CAR_STAT_CD = 'D1002'
+        AND C.DB_STS = 'A'
+        INNER JOIN SELL_CAR_MODEL D
+        ON B.SELL_CAR_SEQ = D.SELL_CAR_SEQ
+        AND C.SELL_CAR_SEQ = D.SELL_CAR_SEQ
+        WHERE A.DB_STS = 'A'
+        <if test="roleCd eq 'ADMIN'.toString()">
+        AND A.EXH_HALL_SEQ IN (
+            SELECT EXH_HALL_SEQ FROM ADMIN_EXHIBITION_HALL_MAP WHERE ADM_SEQ = #{admSeq} AND AUTH = 'ADMIN' AND DB_STS = 'A'
+        )
+        </if>
+    </select>
+
+    <!-- 최근 7일간 판매가 완료된 매물 (그룹관리자/슈퍼관리자 권한) -->
+    <select id="selectSoldOutWeeklyCount" resultType="Integer">
+        SELECT
+            COUNT(1)
+        FROM EXHIBITION_HALL A
+        INNER JOIN DISCRIPTION B
+        ON A.EXH_HALL_SEQ = B.EXH_HALL_SEQ
+        INNER JOIN   CAR_SELL_STAT_HIS C
+        ON B.SELL_CAR_SEQ = C.SELL_CAR_SEQ
+        AND C.CAR_STAT_CD = 'D1004'
+        AND DATE_FORMAT(now(), '%Y%m%d') BETWEEN DATE_FORMAT(DATE_ADD(C.CRE_DATE, INTERVAL -6 DAY), '%Y%m%d') AND DATE_FORMAT(C.CRE_DATE, '%Y%m%d')
+        AND C.DB_STS = 'A'
+        INNER JOIN SELL_CAR_MODEL D
+        ON B.SELL_CAR_SEQ = D.SELL_CAR_SEQ
+        AND C.SELL_CAR_SEQ = D.SELL_CAR_SEQ
+        WHERE A.DB_STS = 'A'
+        <if test="roleCd eq 'ADMIN'.toString()">
+        AND A.EXH_HALL_SEQ IN (
+            SELECT EXH_HALL_SEQ FROM ADMIN_EXHIBITION_HALL_MAP WHERE ADM_SEQ = #{admSeq} AND AUTH = 'ADMIN' AND DB_STS = 'A'
+        )
+        </if>
+    </select>
+
+    <!-- 최근 7일간 판매가 취소된 매물 (그룹관리자/슈퍼관리자 권한) -->
+    <select id="selectCancelWeeklyCount" resultType="Integer">
+        SELECT
+            COUNT(1)
+        FROM EXHIBITION_HALL A
+        INNER JOIN DISCRIPTION B
+        ON A.EXH_HALL_SEQ = B.EXH_HALL_SEQ
+        INNER JOIN   CAR_SELL_STAT_HIS C
+        ON B.SELL_CAR_SEQ = C.SELL_CAR_SEQ
+        AND C.CAR_STAT_CD = 'D1005'
+        AND DATE_FORMAT(now(), '%Y%m%d') BETWEEN DATE_FORMAT(DATE_ADD(C.CRE_DATE, INTERVAL -6 DAY), '%Y%m%d') AND DATE_FORMAT(C.CRE_DATE, '%Y%m%d')
+        AND C.DB_STS = 'A'
+        INNER JOIN SELL_CAR_MODEL D
+        ON B.SELL_CAR_SEQ = D.SELL_CAR_SEQ
+        AND C.SELL_CAR_SEQ = D.SELL_CAR_SEQ
+        WHERE A.DB_STS = 'A'
+        <if test="roleCd eq 'ADMIN'.toString()">
+        AND A.EXH_HALL_SEQ IN (
+            SELECT EXH_HALL_SEQ FROM ADMIN_EXHIBITION_HALL_MAP WHERE ADM_SEQ = #{admSeq} AND AUTH = 'ADMIN' AND DB_STS = 'A'
+        )
+        </if>
+    </select>
+
+    <!-- 매물현황 (그룹관리자/슈퍼관리자 권한) -->
+    <select id="selectItemStatusList" resultType="kr.co.vwa.domain.DashBoardVo">
+        SELECT * FROM (
+            SELECT
+                A.TYPE, COALESCE(A.STORE_NM, '계') AS STORE_NM
+                , SUM(CASE WHEN C.CAR_STAT_CD = 'D1002' THEN 1 ELSE 0 END) AS SELL_CNT
+                , SUM(CASE WHEN C.CAR_STAT_CD = 'D1004' THEN 1 ELSE 0 END) AS COMP_CNT
+                , SUM(CASE WHEN C.CAR_STAT_CD = 'D1005' THEN 1 ELSE 0 END) AS CANCEL_CNT
+            FROM EXHIBITION_HALL A
+            LEFT JOIN DISCRIPTION B
+            ON A.EXH_HALL_SEQ = B.EXH_HALL_SEQ
+            LEFT JOIN   CAR_SELL_STAT_HIS C
+            ON B.SELL_CAR_SEQ = C.SELL_CAR_SEQ
+            AND C.DB_STS = 'A'
+            AND DATE_FORMAT(C.CRE_DATE, '%Y%m%d') BETWEEN DATE_FORMAT(DATE_ADD(now(), INTERVAL -6 DAY), '%Y%m%d') AND DATE_FORMAT(now(), '%Y%m%d')
+            LEFT JOIN SELL_CAR_MODEL D
+            ON B.SELL_CAR_SEQ = D.SELL_CAR_SEQ
+            AND C.SELL_CAR_SEQ = D.SELL_CAR_SEQ
+            WHERE A.DB_STS = 'A'
+            <if test="roleCd eq 'ADMIN'.toString()">
+            AND A.EXH_HALL_SEQ IN (
+                SELECT EXH_HALL_SEQ FROM ADMIN_EXHIBITION_HALL_MAP WHERE ADM_SEQ = #{admSeq} AND AUTH = 'ADMIN' AND DB_STS = 'A'
+            )
+            </if>
+            GROUP BY A.TYPE, A.STORE_NM
+            WITH ROLLUP
+        ) T
+        WHERE T.TYPE IS NOT NULL
+    </select>
+
+    <!-- 위클리 리포트 (슈퍼관리자 권한) -->
+    <select id="selectWeeklyReportList" resultType="kr.co.vwa.domain.DashBoardVo">
+        SELECT
+            A.WEEK_REP_SEQ
+            , A.CATEGORY_CD
+            , B.CD_NM AS CATEGORY_NM
+            , A.TITLE
+            , DATE_FORMAT(A.STR_DATE, '%Y.%m.%d') AS STR_DATE
+            , DATE_FORMAT(A.END_DATE, '%Y.%m.%d') AS END_DATE
+            <![CDATA[
+            , CASE WHEN A.STR_DATE IS NULL THEN 3
+                WHEN A.STR_DATE > DATE_FORMAT(NOW(), '%Y-%m-%d') THEN 'reservation'
+                WHEN A.END_DATE < DATE_FORMAT(NOW(), '%Y-%m-%d') THEN 'invisible'
+                WHEN DATE_FORMAT(NOW(), '%Y-%m-%d') BETWEEN A.STR_DATE AND A.END_DATE THEN 'ing'
+                ELSE NULL
+              END AS STATUS
+            ]]>
+        , (SELECT COUNT(1) FROM WEEKLY_REPORT_DETAIL WHERE WEEK_REP_SEQ = A.WEEK_REP_SEQ AND FILE_NM IS NOT NULL AND UPLOAD_DATE IS NOT NULL) AS COUNT
+        FROM WEEKLY_REPORT A
+        , CODE_MNG B
+        WHERE A.CATEGORY_CD = B.CD
+        AND A.DB_STS = 'A'
+        ORDER BY A.CRE_DATE DESC
+        LIMIT 5
+    </select>
+
+    <!-- 어제 접속자 통계 (슈퍼관리자 권한) -->
+    <select id="selectYesterDayVisit" resultType="kr.co.vwa.domain.DashBoardVo">
+        SELECT * FROM (
+            SELECT
+                COALESCE(CASE WHEN DEVICE = 'Computer' THEN 'PC' WHEN DEVICE = 'Unknown' THEN 'etc' ELSE DEVICE END, 'Total') AS DEVICE
+                , CASE WHEN COALESCE(DEVICE, 'Total') = 'Total' THEN 1 ELSE 0 END AS SORT
+                , COUNT(1) AS TOT
+                , ROUND(COUNT(1) / (SELECT COUNT(1) FROM ACCESS_LOG WHERE REQ_DATE = DATE_FORMAT(DATE_ADD(NOW(), INTERVAL -1 DAY) , '%Y%m%d')) * 100, 2) AS PERCENT
+            FROM ACCESS_LOG
+            WHERE REQ_DATE = DATE_FORMAT(DATE_ADD(NOW(), INTERVAL -1 DAY) , '%Y%m%d')
+            GROUP BY DEVICE
+            WITH ROLLUP
+        ) A ORDER BY SORT ASC, PERCENT DESC
+    </select>
+
+</mapper>

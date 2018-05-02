@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.co.vwa.repository.WebLogRepository">
+    <insert id="insertWebLog"  parameterType="kr.co.vwa.domain.WebLogVo">
+        INSERT INTO ACCESS_LOG (
+              REQ_DTM
+            , REQ_YEAR
+            , REQ_MONTH
+            , REQ_DATE
+            , REQ_TIME
+            , URL
+            , REFERER
+            , REFERER_SITE
+            , MENU
+            , PAGE
+            , DEVICE
+            , OS
+            , OS_GROUP
+            , BROWSER
+            , BROWSER_GROUP
+            , IP_ADDRESS
+            , USER_AGENT
+            , CRE_DATE
+        ) VALUES (
+              #{reqDtm}
+            , #{reqYear}
+            , #{reqMonth}
+            , #{reqDate}
+            , #{reqTime}
+            , #{url}
+            , #{referer}
+            , #{refererSite}
+            , #{menu}
+            , #{page}
+            , #{device}
+            , #{os}
+            , #{osGroup}
+            , #{browser}
+            , #{browserGroup}
+            , #{ipAddress}
+            , #{userAgent}
+            , NOW()
+        )
+    </insert>
+</mapper>

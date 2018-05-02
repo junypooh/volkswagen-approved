@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.co.vwa.repository.MajorOptionRepository">
+    <resultMap id="majorOption" type="kr.co.vwa.domain.OptionVo">
+        <association property="thumImgOnFile" column="THUM_IMG_ON" javaType="kr.co.vwa.domain.FileVo" select="selectOnFile" />
+        <association property="thumImgOffFile" column="THUM_IMG_OFF" javaType="kr.co.vwa.domain.FileVo" select="selectOffFile" />
+    </resultMap>
+    <!-- 주요옵션관리 주요옵션 전체 조회 -->
+    <select id="selectMajorOptionList" parameterType="java.util.Map" resultMap="majorOption">
+        SELECT
+              OPT_SEQ
+            , CATEGORY_CD
+            , OPT_NM
+            , THUM_IMG_ON
+            , THUM_IMG_OFF
+            , MAJ_OPT_YN
+            , EXPS_YN
+            , MAJ_ORD_NO
+            , DB_STS
+            , CRE_USER
+            , CRE_DATE
+            , UPD_USER
+            , UPD_DATE
+        FROM OPTION_MNG
+        WHERE DB_STS = 'A'
+            AND MAJ_OPT_YN = 'Y'
+            AND VW_YN=ifnull(#{vwYn},'Y')
+        <if test="expsYn != null and expsYn != ''">
+            AND EXPS_YN = #{expsYn}
+        </if>
+        ORDER BY MAJ_ORD_NO ASC
+    </select>
+
+    <!-- 주요옵션관리 주요옵션 전체 조회 -->
+    <select id="selectMajorOptionListByCar" resultMap="majorOption">
+        SELECT
+            A.OPT_SEQ,
+            A.CATEGORY_CD,
+            A.OPT_NM,
+            A.THUM_IMG_ON,
+            A.THUM_IMG_OFF,
+            B.SELL_CAR_SEQ
+        FROM OPTION_MNG A
+        LEFT JOIN CAR_OPT_MAP B
+        ON (A.OPT_SEQ = B.OPT_SEQ AND B.SELL_CAR_SEQ = #{sellCarSeq})
+        WHERE A.DB_STS = 'A'
+        AND A.MAJ_OPT_YN = 'Y'
+        AND A.EXPS_YN = 'Y'
+        AND A.VW_YN=ifnull(#{vwYn},'Y')
+        ORDER BY A.MAJ_ORD_NO ASC
+    </select>
+
+    <!-- 주요옵션관리 옵션별 썸네일 ON 파일 -->
+    <select id="selectOnFile" resultType="kr.co.vwa.domain.FileVo">
+        SELECT
+              FILE_SEQ
+            , FILE_NM
+            , FILE_PATH
+            , FILE_SIZE
+            , FILE_EXT
+            , ORI_FILE_NM
+            , CRE_DATE
+            , CRE_USER
+        FROM  FILE_INFO
+        WHERE 1 = 1
+          AND FILE_SEQ = #{thumImgOn}
+    </select>
+
+    <!-- 주요옵션관리 옵션별 썸네일 OFF 파일 -->
+    <select id="selectOffFile" resultType="kr.co.vwa.domain.FileVo">
+        SELECT
+        FILE_SEQ
+        , FILE_NM
+        , FILE_PATH
+        , FILE_SIZE
+        , FILE_EXT
+        , ORI_FILE_NM
+        , CRE_DATE
+        , CRE_USER
+        FROM  FILE_INFO
+        WHERE 1 = 1
+          AND FILE_SEQ = #{thumImgOff}
+    </select>
+
+    <!-- 주요옵션관리 옵션 수정 -->
+    <update id="updateMajorOption" parameterType="kr.co.vwa.domain.OptionVo">
+        UPDATE OPTION_MNG SET
+              THUM_IMG_ON = #{thumImgOn}
+            , THUM_IMG_OFF = #{thumImgOff}
+            , EXPS_YN = #{expsYn}
+            , UPD_USER = #{updUser}
+            , UPD_DATE = NOW()
+        WHERE OPT_SEQ = #{optSeq}
+    </update>
+
+    <!-- 주요옵션관리 정렬저장 -->
+    <update id="updateMajorOrdNo" parameterType="kr.co.vwa.domain.OptionVo">
+            UPDATE OPTION_MNG SET
+                 MAJ_ORD_NO = #{majOrdNo}
+                ,UPD_USER = #{updUser}
+                ,UPD_DATE = NOW()
+            WHERE OPT_SEQ = #{optSeq}
+    </update>
+</mapper>

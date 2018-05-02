@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.co.vwa.repository.FileRepository">
+
+    <!-- 파일정보 등록 -->
+    <insert id="insertFileInfo">
+        INSERT INTO FILE_INFO
+        (
+          FILE_NM, FILE_PATH, FILE_SIZE, FILE_EXT, ORI_FILE_NM, CRE_DATE, CRE_USER
+        ) VALUES
+        (
+          #{fileNm}, #{filePath}, #{fileSize}, #{fileExt}, #{oriFileNm}, now(), #{creUser,jdbcType=VARCHAR}
+        )
+        <selectKey keyProperty="fileSeq" resultType="Long">
+            SELECT LAST_INSERT_ID()
+        </selectKey>
+    </insert>
+
+    <!-- 파일정보 조회 -->
+    <select id="retrieveFile" resultType="kr.co.vwa.domain.FileVo">
+        SELECT 	FILE_SEQ, FILE_NM, FILE_PATH, FILE_SIZE, FILE_EXT, ORI_FILE_NM, CRE_DATE, CRE_USER
+        FROM 	FILE_INFO
+        WHERE	FILE_SEQ = #{fileSeq}
+    </select>
+
+</mapper>

@@ -1,0 +1,227 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.co.vwa.repository.AuthorityRepository">
+    <resultMap id="auth" type="kr.co.vwa.domain.AuthorityVo">
+        <id property="admSeq" column="ADM_SEQ"/>
+        <collection property="list" column="ADM_SEQ" ofType="kr.co.vwa.domain.AuthExhibMapVo" select="authSelect" />
+    </resultMap>
+
+    <!--권한관리/목록 관리자 전체 개수 조회-->
+    <select id="selectAuthListTotalCount" parameterType="map" resultType="java.lang.Integer">
+        SELECT
+              COUNT(*) AS COUNT
+        FROM ADMIN_MNG
+        WHERE DB_STS = 'A'
+        <if test="value == 'Branch' or value == 'VW'">
+            AND AUTH_TYPE=#{value}
+        </if>
+    </select>
+
+    <!--권한관리/목록 관리자 조회-->
+    <select id="authListSelect" parameterType="map" resultMap="auth">
+        SELECT ADM_SEQ,AUTH_TYPE,ID,MEMO, DATE_FORMAT(VISIT_DAY, '%Y.%m.%d %H:%i') AS VISITDAY, DATE_FORMAT(IFNULL(UPD_DATE, CRE_DATE ), '%Y.%m.%d %H:%i') AS UPDDATE
+        FROM ADMIN_MNG
+        WHERE DB_STS = 'A'
+        <if test="value == 'Branch' or value == 'VW'">
+            AND AUTH_TYPE=#{value}
+        </if>
+        ORDER BY USE_YN DESC, IFNULL(UPD_DATE, CRE_DATE) DESC
+        LIMIT #{defaultContentsCount} OFFSET #{limitRow}
+    </select>
+
+    <!--권한관리/목록 관리자-전시장관리 매핑 전체조회-->
+    <select id="authSelect" resultType="kr.co.vwa.domain.AuthExhibMapVo">
+        SELECT
+            TYPE,STORE_NM,
+            AUTH,
+            ADM_SEQ,
+            A.EXH_HALL_SEQ,
+            B.DB_STS
+        FROM EXHIBITION_HALL A,
+            ADMIN_EXHIBITION_HALL_MAP B
+        WHERE A.EXH_HALL_SEQ = B.EXH_HALL_SEQ
+        AND ADM_SEQ=#{ADM_SEQ}
+        AND A.EXPS_YN='Y'
+        AND B.DB_STS='A'
+        AND A.DB_STS='A'
+    </select>
+
+    <!--권한관리/등록 전시장관리 조회-->
+    <select id="selectExhibList" resultType="kr.co.vwa.domain.BranchVo">
+        SELECT
+              EXH_HALL_SEQ
+            , TYPE
+            , STORE_NM
+        FROM EXHIBITION_HALL
+        WHERE DB_STS = 'A'
+        AND EXPS_YN = 'Y'
+        ORDER BY EXPS_NO ASC
+    </select>
+
+    <!--권한관리/등록 관리자 max 시퀀스조회-->
+    <select id="selectMaxAdmSeq" resultType="java.lang.Integer">
+        SELECT COUNT(*)+1 AS MAX_ADM_SEQ
+        FROM ADMIN_MNG
+    </select>
+
+    <!--권한관리/등록 관리자 정보 등록-->
+    <insert id="registeAuthority" parameterType="kr.co.vwa.domain.AuthorityVo" useGeneratedKeys="true" keyProperty="admSeq">
+        INSERT INTO ADMIN_MNG
+        (
+        AUTH_TYPE
+        , ID
+        , PWD
+        , MEMO
+        <if test="@org.apache.commons.lang3.StringUtils@isNotBlank(defaultExhHallSeq)">
+        , EXH_HALL_SEQ
+        </if>
+        , USE_YN
+        , DB_STS
+        , CRE_USER
+        , CRE_DATE
+        ) SELECT
+          #{authType}
+        <if test="authType == 'VW'">
+            , CONCAT('admin', COUNT(*)+1)
+        </if>
+        <if test="authType == 'Branch'">
+            , CONCAT('vwa_admin', COUNT(*)+1)
+        </if>
+        , #{pwd}
+        , #{memo}
+        <if test="@org.apache.commons.lang3.StringUtils@isNotBlank(defaultExhHallSeq)">
+        , #{defaultExhHallSeq}
+        </if>
+        , #{useYn}
+        , 'A'
+        , #{creUser}
+        , NOW()
+        FROM ADMIN_MNG
+        WHERE AUTH_TYPE = #{authType}
+    </insert>
+
+    <!--관한관리/등록 관리자-전시장 매핑 등록-->
+    <insert id="registeAuthExhMapList">
+        INSERT INTO ADMIN_EXHIBITION_HALL_MAP
+        (
+              ADM_SEQ
+            , EXH_HALL_SEQ
+            , AUTH
+            , DB_STS
+            , CRE_USER
+            , CRE_DATE
+        ) VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+                  #{item.admSeq}
+                , #{item.exhHallSeq}
+                , #{item.auth}
+                , 'A'
+                , #{item.creUser}
+                , NOW()
+            )
+        </foreach>
+    </insert>
+
+    <!--권한관리/상세 관리자 조회-->
+    <select id="authMngDetail" parameterType="kr.co.vwa.domain.AuthorityVo" resultType="kr.co.vwa.domain.AuthorityVo">
+        SELECT ADM_SEQ,AUTH_TYPE,ID,MEMO,EXH_HALL_SEQ AS DEFAULT_EXH_HALL_SEQ,USE_YN,DB_STS
+        FROM ADMIN_MNG
+        WHERE ADM_SEQ=#{admSeq}
+        AND DB_STS = 'A'
+        ORDER BY ADM_SEQ DESC
+    </select>
+
+    <!--권한관리/상세 전시장 조회-->
+    <select id="authExhMapDetail" parameterType="kr.co.vwa.domain.AuthorityVo" resultType="kr.co.vwa.domain.AuthExhibMapVo">
+        SELECT
+            A.EXH_HALL_SEQ,
+            TYPE,STORE_NM,
+            B.DB_STS,B.AUTH
+        FROM EXHIBITION_HALL A
+            LEFT JOIN (SELECT
+                            A.ADM_SEQ
+                            , B.EXH_HALL_SEQ
+                            , B.AUTH
+                            , B.DB_STS
+                        FROM ADMIN_MNG A
+                        , ADMIN_EXHIBITION_HALL_MAP B
+                        WHERE A.ADM_SEQ = B.ADM_SEQ
+                        AND A.ADM_SEQ = #{admSeq}
+                        AND A.DB_STS = 'A')
+            B ON A.EXH_HALL_SEQ = B.EXH_HALL_SEQ
+        WHERE A.DB_STS = 'A'
+        AND A.EXPS_YN = 'Y'
+        ORDER BY A.EXPS_NO
+    </select>
+
+    <!--권한관리/상세 관리자 수정-->
+    <update id="authUpdate" parameterType="kr.co.vwa.domain.AuthorityVo">
+        UPDATE ADMIN_MNG
+        SET MEMO=#{memo},
+            EXH_HALL_SEQ=#{defaultExhHallSeq},
+            USE_YN=#{useYn},
+            UPD_DATE=NOW(),
+            UPD_USER=#{updUser}
+        WHERE ADM_SEQ=#{admSeq}
+    </update>
+
+    <!--권한관리/상세 관리자-전시장관리 매핑 수정-->
+    <update id="updateExhMap" parameterType="kr.co.vwa.domain.AuthExhibMapVo">
+        UPDATE ADMIN_EXHIBITION_HALL_MAP
+        SET AUTH=#{auth},
+            DB_STS=#{dbSts},
+            UPD_DATE=NOW(),
+            UPD_USER=#{updUser}
+        WHERE ADM_SEQ=#{admSeq} AND EXH_HALL_SEQ=#{exhHallSeq}
+    </update>
+
+    <!--권한관리/등록 관리자-전시장관리 매핑 등록-->
+    <insert id="registeExhMap" parameterType="kr.co.vwa.domain.AuthExhibMapVo">
+        INSERT INTO ADMIN_EXHIBITION_HALL_MAP (
+            ADM_SEQ
+            ,EXH_HALL_SEQ
+            ,AUTH
+            ,DB_STS
+            ,CRE_USER
+            ,CRE_DATE
+            ,UPD_USER
+            ,UPD_DATE
+        )
+        VALUES(
+            #{admSeq},
+            #{exhHallSeq},
+            #{auth},
+            #{dbSts},
+            #{updUser},
+            NOW(),
+            #{updUser},
+            NOW()
+        )
+    </insert>
+
+    <!--권한관리/상세 비밀번호 수정-->
+    <update id="authPwdChange" parameterType="kr.co.vwa.domain.AuthorityVo">
+        UPDATE ADMIN_MNG
+        SET PWD=#{pwd}
+        WHERE ADM_SEQ=#{admSeq}
+    </update>
+
+    <!-- 권한관리/등록 그룹관리자 권한 select -->
+    <select id="selectAuthExhibList" resultType="kr.co.vwa.domain.BranchVo">
+        SELECT
+            TYPE,STORE_NM,
+            AUTH,
+            ADM_SEQ,
+            A.EXH_HALL_SEQ,
+            B.DB_STS
+        FROM EXHIBITION_HALL A,
+             ADMIN_EXHIBITION_HALL_MAP B
+        WHERE A.EXH_HALL_SEQ = B.EXH_HALL_SEQ
+          AND ADM_SEQ=#{ADM_SEQ}
+          AND B.AUTH = 'ADMIN'
+          AND A.EXPS_YN='Y'
+          AND B.DB_STS='A'
+          AND A.DB_STS='A'
+    </select>
+</mapper>

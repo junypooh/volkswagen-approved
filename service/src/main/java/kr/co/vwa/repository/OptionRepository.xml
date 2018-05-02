@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.co.vwa.repository.OptionRepository">
+
+    <!--옵션관리/목록 전체 조회-->
+    <select id="optMngList" parameterType="kr.co.vwa.domain.OptionVo" resultType="kr.co.vwa.domain.OptionVo">
+        SELECT OPT_SEQ OPTSEQ,
+            CATEGORY_CD CATEGORYCD,
+            OPT_NM OPTNM,
+            MAJ_OPT_YN MAJOPTYN,
+            EXPS_YN EXPSYN,
+            ORD_NO ORDNO,
+            MAJ_ORD_NO MAJORDNO,
+            DB_STS DBSTS,
+            CRE_USER CREUSER,
+            CRE_DATE CREDATE,
+            UPD_USER UPDUSER,
+            DATE_FORMAT(UPD_DATE, '%Y.%m.%d %H:%i') AS UPDDATE,
+            DISC,
+            VW_YN
+        FROM OPTION_MNG
+        WHERE DB_STS='A' AND CATEGORY_CD=#{categoryCd} AND VW_YN=ifnull(#{vwYn},'Y')
+        ORDER BY ORD_NO
+    </select>
+
+    <select id="optMngListByCar" resultType="kr.co.vwa.domain.OptionVo">
+        SELECT
+            A.OPT_SEQ,
+            A.CATEGORY_CD,
+            A.OPT_NM,
+            A.DISC,
+            B.SELL_CAR_SEQ
+        FROM OPTION_MNG A
+        LEFT JOIN CAR_OPT_MAP B
+        ON (A.OPT_SEQ = B.OPT_SEQ AND B.SELL_CAR_SEQ = #{sellCarSeq})
+        WHERE A.DB_STS='A' AND A.CATEGORY_CD=#{categoryCd} AND A.EXPS_YN = 'Y' AND A.VW_YN=#{vwYn}
+        ORDER BY A.ORD_NO
+    </select>
+
+    <!--옵션관리/목록 등록-->
+    <insert id="registeOptMng" parameterType="kr.co.vwa.domain.OptionVo">
+        INSERT INTO OPTION_MNG (
+            CATEGORY_CD
+            ,OPT_NM
+            ,EXPS_YN
+            ,MAJ_OPT_YN
+            ,ORD_NO
+            ,DB_STS
+            ,CRE_USER
+            ,CRE_DATE
+            ,UPD_USER
+            ,UPD_DATE
+            ,DISC
+            ,VW_YN
+        )
+        SELECT
+            #{categoryCd}
+            ,#{optNm}
+            ,#{expsYn}
+            ,#{majOptYn}
+            , COUNT(OPT_SEQ)+1
+            ,'A'
+            ,#{updUser}
+            ,NOW()
+            ,#{updUser}
+            ,NOW()
+            ,#{disc}
+            ,#{vwYn}
+        FROM OPTION_MNG
+    </insert>
+
+    <!--옵션관리/목록 노출여부 수정-->
+    <update id="optExpUpdate" parameterType="kr.co.vwa.domain.OptionVo">
+        UPDATE OPTION_MNG
+        SET EXPS_YN=#{expsYn},
+            UPD_USER=#{updUser},
+            UPD_DATE=NOW()
+        WHERE OPT_SEQ=#{optSeq} AND DB_STS='A'
+    </update>
+
+    <!--옵션관리/목록 수정-->
+    <update id="updateOptMng" parameterType="kr.co.vwa.domain.OptionVo">
+        UPDATE OPTION_MNG
+        SET OPT_NM=#{optNm},
+            EXPS_YN=#{expsYn},
+            MAJ_OPT_YN=#{majOptYn},
+            UPD_USER=#{updUser},
+            UPD_DATE=NOW(),
+            DISC=#{disc}
+        WHERE OPT_SEQ=#{optSeq} AND DB_STS='A'
+    </update>
+
+    <!--옵션관리/목록 우선순위 수정-->
+    <update id="updateOptMngOrdNo" parameterType="kr.co.vwa.domain.OptionVo">
+        UPDATE OPTION_MNG
+        SET ORD_NO=#{ordNo}
+        WHERE OPT_SEQ=#{optSeq} AND DB_STS='A'
+    </update>
+
+    <!--옵션관리/목록 삭제-->
+    <update id="optDelete" parameterType="kr.co.vwa.domain.OptionVo">
+        UPDATE OPTION_MNG
+        SET DB_STS='D',
+            UPD_USER=#{updUser},
+            UPD_DATE=NOW()
+        WHERE OPT_SEQ=#{optSeq} AND DB_STS='A'
+    </update>
+</mapper>

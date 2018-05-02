@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.co.vwa.repository.HierarchyRepository">
+
+    <resultMap id="hierarckyVo" type="kr.co.vwa.domain.HierarckyVo" autoMapping="true">
+        <id column="CD" property="cd" />
+        <result column="PATH" property="path" />
+        <result column="DEVICE" property="device" />
+        <result column="ITEM" property="item" />
+        <result column="PART" property="part" />
+        <result column="OPINION" property="opinion" />
+        <collection property="state" javaType="ArrayList" ofType="kr.co.vwa.domain.HierarckySubVo" autoMapping="true">
+            <id column="DETAIL_CD" property="value" />
+            <result column="DETAIL_CD_NM" property="text" />
+            <result column="CHECKED" property="checked" />
+        </collection>
+    </resultMap>
+
+    <!-- 주요장치 조회 -->
+    <select id="selectMajorDeviceData" resultMap="hierarckyVo">
+        SELECT	SUBSTRING_INDEX(SUBSTRING_INDEX(PATH_NM, '|', 1), '|', -1) AS PATH,
+                SUBSTRING_INDEX(SUBSTRING_INDEX(PATH_NM, '|', 2), '|', -1) AS DEVICE,
+                SUBSTRING_INDEX(SUBSTRING_INDEX(PATH_NM, '|', 3), '|', -1) AS ITEM,
+                SUBSTRING_INDEX(SUBSTRING_INDEX(PATH_NM, '|', 4), '|', -1) AS PART,
+                A.CD, B.DETAIL_CD, B.DETAIL_CD_NM, B.CHECKED, B.OPINION
+        FROM	(
+
+                    SELECT  CONCAT(REPEAT('    ', LEVEL - 1), HI.CD) AS TREEITEM,
+                            CONNECT_BY_PATH('|', HI.CD) AS PATH,
+                            CONNECT_BY_PATH_NM('|', HI.CD, HI.CD_NM) AS PATH_NM,
+                            HI.CD, HI.CD_NM,
+                            UPP_CD, LEVEL
+                    FROM    (
+                            SELECT  CONNECT_BY_PARENT_EQ_PRIOR_ID_WITH_LEVEL(CD, 3) AS CD,
+                                    CAST(@LEVEL AS SIGNED) AS LEVEL
+                            FROM    (
+                                    SELECT  @START_WITH := #{startWith},
+                                            @CD := @START_WITH,
+                                            @LEVEL := 0
+                                    ) VARS, CODE_MNG
+                            WHERE   @CD IS NOT NULL
+                            ) HO
+                    JOIN    CODE_MNG HI
+                    ON      HI.CD = HO.CD
+                    WHERE	LEVEL = 3
+                 )  A
+                 LEFT JOIN
+                 (
+                    SELECT	A.CD, A.DETAIL_CD, A.DETAIL_CD_NM,
+                            CASE WHEN (SELECT COUNT(1) FROM MAJOR_DEVICE WHERE SELL_CAR_SEQ = #{sellCarSeq}) > 0 THEN (CASE WHEN B.SELL_CAR_SEQ IS NOT NULL THEN 'checked' ELSE '' END)
+                            	 ELSE (CASE WHEN A.DETAIL_CD = CONCAT(A.CD,'1') THEN 'checked' ELSE '' END) END AS CHECKED,
+                            CASE WHEN A.CD = 'G1811' THEN B.OPINION ELSE '' END AS OPINION
+
+                    FROM DETAIL_CODE_MNG A
+                    LEFT JOIN MAJOR_DEVICE B
+                    ON A.CD = B.CD
+                    AND A.DETAIL_CD = B.DETAIL_CD
+                    AND B.SELL_CAR_SEQ = #{sellCarSeq}
+                    WHERE A.DB_STS = 'A'
+                 ) B
+                 ON A.CD = B.CD
+                 ORDER BY A.CD ASC, B.DETAIL_CD ASC
+    </select>
+
+    <!-- 인증차량 품질보증 데이터 조회 -->
+    <select id="selectSvcPlusData" resultMap="hierarckyVo">
+        SELECT	SUBSTRING_INDEX(SUBSTRING_INDEX(PATH_NM, '|', 1), '|', -1) AS PATH,
+                SUBSTRING_INDEX(SUBSTRING_INDEX(PATH_NM, '|', 2), '|', -1) AS DEVICE,
+                SUBSTRING_INDEX(SUBSTRING_INDEX(PATH_NM, '|', 3), '|', -1) AS ITEM,
+                SUBSTRING_INDEX(SUBSTRING_INDEX(PATH_NM, '|', 4), '|', -1) AS PART,
+                A.CD, B.DETAIL_CD, B.DETAIL_CD_NM, B.CHECKED
+        FROM	(
+
+                    SELECT  CONCAT(REPEAT('    ', LEVEL - 1), HI.CD) AS TREEITEM,
+                            CONNECT_BY_PATH('|', HI.CD) AS PATH,
+                            CONNECT_BY_PATH_NM('|', HI.CD, HI.CD_NM) AS PATH_NM,
+                            HI.CD, HI.CD_NM,
+                            UPP_CD, LEVEL
+                    FROM    (
+                            SELECT  CONNECT_BY_PARENT_EQ_PRIOR_ID_WITH_LEVEL(CD, 3) AS CD,
+                                    CAST(@LEVEL AS SIGNED) AS LEVEL
+                            FROM    (
+                                    SELECT  @START_WITH := #{startWith},
+                                            @CD := @START_WITH,
+                                            @LEVEL := 0
+                                    ) VARS, CODE_MNG
+                            WHERE   @CD IS NOT NULL
+                            ) HO
+                    JOIN    CODE_MNG HI
+                    ON      HI.CD = HO.CD
+                    WHERE	LEVEL = 2
+                 )  A
+                 LEFT JOIN
+                 (
+                    SELECT	A.CD, A.DETAIL_CD, A.DETAIL_CD_NM,
+                            CASE WHEN (SELECT COUNT(1) FROM SVC_PLUS_DATA WHERE SELL_CAR_SEQ = #{sellCarSeq}) > 0 THEN (CASE WHEN B.SELL_CAR_SEQ IS NOT NULL THEN 'checked' ELSE '' END)
+                            	 ELSE (CASE WHEN A.DETAIL_CD = CONCAT(A.CD,'1') THEN 'checked' ELSE '' END) END AS CHECKED
+
+                    FROM DETAIL_CODE_MNG A
+                    LEFT JOIN SVC_PLUS_DATA B
+                    ON A.CD = B.CD
+                    AND A.DETAIL_CD = B.DETAIL_CD
+                    AND B.SELL_CAR_SEQ = #{sellCarSeq}
+                    WHERE A.DB_STS = 'A'
+                 ) B
+                 ON A.CD = B.CD
+                 ORDER BY A.CD ASC, B.DETAIL_CD ASC
+    </select>
+
+</mapper>

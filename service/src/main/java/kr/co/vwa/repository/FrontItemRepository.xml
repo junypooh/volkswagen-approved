@@ -1,0 +1,297 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.co.vwa.repository.FrontItemRepository">
+
+    <resultMap id="resultFrontItemVo" type="kr.co.vwa.domain.FrontItemVo" autoMapping="true">
+        <id column="SELL_CAR_SEQ" property="sellCarSeq" />
+        <collection property="tagVos" javaType="ArrayList" ofType="kr.co.vwa.domain.TagVo" autoMapping="true">
+            <result column="TAG_SEQ" property="tagSeq" />
+            <result column="TAG_NM" property="tagNm" />
+        </collection>
+    </resultMap>
+
+    <!-- 프론트 비폭스바겐 제조사 리스트 -->
+    <select id="selectNonVwaCarMakList" resultType="kr.co.vwa.domain.CarInfoVo">
+        SELECT
+        A.MAK
+        FROM SELL_CAR_MODEL A
+        , CAR_SELL_STAT_HIS B
+        WHERE A.SELL_CAR_SEQ = B.SELL_CAR_SEQ
+        AND A.MAK != '폭스바겐'
+        AND B.CAR_STAT_CD IN ('D1002', 'D1004')
+        AND A.DB_STS = 'A'
+        AND B.DB_STS = 'A'
+        GROUP BY A.MAK
+    </select>
+
+    <!-- 프론트 비폭스바겐 모델 리스트 -->
+    <select id="selectNonVwaCarModelList" resultType="kr.co.vwa.domain.CarInfoVo">
+        SELECT
+        A.MODEL
+        FROM SELL_CAR_MODEL A
+        , CAR_SELL_STAT_HIS B
+        WHERE A.SELL_CAR_SEQ = B.SELL_CAR_SEQ
+        AND A.MAK != '폭스바겐'
+        AND A.MAK = #{mak}
+        AND B.CAR_STAT_CD IN ('D1002', 'D1004')
+        AND A.DB_STS = 'A'
+        AND B.DB_STS = 'A'
+        GROUP BY A.MODEL
+    </select>
+
+    <!-- 프론트 비폭스바겐 상세모델 리스트 -->
+    <select id="selectNonVwaCarDetailModelList" resultType="kr.co.vwa.domain.CarInfoVo">
+        SELECT
+        A.DETAIL_MODEL
+        FROM SELL_CAR_MODEL A
+        , CAR_SELL_STAT_HIS B
+        WHERE A.SELL_CAR_SEQ = B.SELL_CAR_SEQ
+        AND A.MAK != '폭스바겐'
+        AND A.MAK = #{mak}
+        AND A.MODEL = #{model}
+        AND B.CAR_STAT_CD IN ('D1002', 'D1004')
+        AND A.DB_STS = 'A'
+        AND B.DB_STS = 'A'
+        GROUP BY A.MODEL
+    </select>
+
+    <!-- 현재 판매진행 중이 차량수(메인페이지용) -->
+    <select id="selectNowSellingItemCount" resultType="Integer">
+        SELECT
+          COUNT(1)
+        FROM SELL_CAR_MODEL A
+        , CAR_SELL_STAT_HIS B
+        WHERE A.SELL_CAR_SEQ = B.SELL_CAR_SEQ
+        AND A.MAK = #{mak}
+        <if test="@org.apache.commons.lang3.StringUtils@isNotBlank(model)">
+            AND A.MODEL = #{model}
+        </if>
+        <if test="@org.apache.commons.lang3.StringUtils@isNotBlank(detailModel)">
+            AND A.DETAIL_MODEL = #{detailModel}
+        </if>
+        AND B.CAR_STAT_CD IN ('D1002', 'D1004')
+        AND A.DB_STS = 'A'
+        AND B.DB_STS = 'A'
+    </select>
+
+    <!-- 매물리스트 sql -->
+    <sql id="sqlItemList">
+        SELECT	*
+        FROM
+                (
+                    SELECT	@ROWNUM:=@ROWNUM+1 AS RNUM
+                          , AA.SELL_CAR_SEQ, AA.MAK, AA.MODEL, AA.DETAIL_MODEL, AA.FROM_YEAR, AA.DRIVE_DIST, AA.FUEL, AA.GEAR, AA.CERT_YN, AA.CAR_TYPE, AA.COLOR, AA.INNER_COLOR, AA.RATING, AA.DETAIL_RATING, AA.CAR_SELL_NO
+                          , AA.CAR_STAT_CD
+                          , AA.LABEL_YN
+                          , AA.DISC_YN
+                          , AA.CRE_DATE
+                          , AA.SELL_PRICE, AA.MON_PAYMENT
+                          , AA.DISC_WRIT
+                          , AA.SIGUN, AA.STORE_NM, AA.TYPE
+                          , AA.FILE_URL
+                        <if test="selectType == 'recommend'">
+                          , AA.DISTANCE
+                        </if>
+                    FROM
+                            (
+                                SELECT 	A.SELL_CAR_SEQ, A.MAK, A.MODEL, A.DETAIL_MODEL, A.FROM_YEAR, A.DRIVE_DIST, A.FUEL, A.GEAR, A.CERT_YN, A.CAR_TYPE, A.COLOR, A.INNER_COLOR, A.RATING, A.DETAIL_RATING, A.CAR_SELL_NO
+                                      , H.CAR_STAT_CD
+                                      , CASE WHEN H.CAR_STAT_CD = 'D1002' AND NOW() <![CDATA[ < ]]> DATE_ADD(B.SELL_STR_DATE, INTERVAL+(SELECT OPT FROM  CODE_MNG WHERE CD = 'F1002') HOUR) THEN 'Y' ELSE 'N' END AS LABEL_YN
+                                      , CASE WHEN H.CAR_STAT_CD = 'D1004' AND NOW() <![CDATA[ > ]]> DATE_ADD(B.SELL_END_DATE, INTERVAL+(SELECT OPT FROM  CODE_MNG WHERE CD = 'F1001') HOUR) THEN 'N' ELSE 'Y' END AS DISC_YN
+                                      , B.CRE_DATE
+                                      , C.SELL_PRICE, C.MON_PAYMENT
+                                      , D.DISC_WRIT
+                                      , E.SIGUN, E.STORE_NM, E.TYPE
+                                      , CONCAT(#{fileUrlPath}, REPLACE(G.FILE_PATH, '/PHOTO/', '/PHOTO/thumbnail/'), G.FILE_NM) AS FILE_URL
+                                    <if test="selectType == 'recommend'">
+                                        , IF ((C.SELL_PRICE - #{sellPrice}) > 0, CONCAT('A', C.SELL_PRICE - #{sellPrice}), CONCAT('B', C.SELL_PRICE - #{sellPrice}))  AS DISTANCE
+                                    </if>
+                                FROM 	SELL_CAR_MODEL A
+                                <choose>
+                                    <when test="previewYn eq 'Y'.toString()">
+                                        LEFT JOIN SELL_DATE_INFO B
+                                        ON		A.SELL_CAR_SEQ = B.SELL_CAR_SEQ
+                                        AND		B.DB_STS = 'A'
+                                        LEFT JOIN CAR_SELL_STAT_HIS H
+                                        ON		A.SELL_CAR_SEQ = H.SELL_CAR_SEQ
+                                        AND		H.DB_STS = 'A'
+                                        AND     H.CAR_STAT_CD IN ('D1002', 'D1004')
+                                    </when>
+                                    <otherwise>
+                                        INNER JOIN SELL_DATE_INFO B
+                                        ON		A.SELL_CAR_SEQ = B.SELL_CAR_SEQ
+                                        AND		B.DB_STS = 'A'
+                                        INNER JOIN CAR_SELL_STAT_HIS H
+                                        ON		A.SELL_CAR_SEQ = H.SELL_CAR_SEQ
+                                        AND		H.DB_STS = 'A'
+                                        AND     H.CAR_STAT_CD IN ('D1002', 'D1004')
+                                    </otherwise>
+                                </choose>
+                                INNER JOIN PRICE_TROUBLE_HISTORY C
+                                ON		A.SELL_CAR_SEQ = C.SELL_CAR_SEQ
+                                AND 	C.DB_STS = 'A'
+                                INNER JOIN DISCRIPTION D
+                                ON 		A.SELL_CAR_SEQ = D.SELL_CAR_SEQ
+                                INNER JOIN EXHIBITION_HALL E
+                                ON		D.EXH_HALL_SEQ = E.EXH_HALL_SEQ
+                                INNER JOIN CAR_PHOTO F
+                                ON 		A.SELL_CAR_SEQ = F.SELL_CAR_SEQ
+                                AND 	F.PHOTO_CD = 'C1001'
+                                AND 	F.DB_STS = 'A'
+                                INNER JOIN FILE_INFO G
+                                ON		F.IMG_SEQ = G.FILE_SEQ
+                            ) AA
+                    INNER JOIN (SELECT @ROWNUM:=0) B
+                    WHERE   1 = 1
+                    AND     AA.DISC_YN = 'Y'
+                    <if test='certYn != "ALL"'>
+                        AND     AA.CERT_YN = #{certYn}
+                    </if>
+
+                    <if test="@org.apache.commons.lang3.StringUtils@isNotBlank(searchWord)">
+                        AND (   AA.MODEL REGEXP REPLACE(#{searchWord}, ' ', '|')
+                            OR  AA.MODEL REGEXP #{searchWord}
+                            OR  AA.DETAIL_MODEL REGEXP REPLACE(#{searchWord}, ' ', '|')
+                            OR  AA.DETAIL_MODEL REGEXP #{searchWord}
+                            OR  AA.DISC_WRIT REGEXP REPLACE(#{searchWord}, ' ', '|')
+                            OR  AA.DISC_WRIT REGEXP #{searchWord})
+                    </if>
+                    <if test="@org.apache.commons.lang3.StringUtils@isNotBlank(mak)">
+                        AND     AA.MAK = #{mak}
+                    </if>
+                    <if test="@org.apache.commons.lang3.StringUtils@isNotBlank(model)">
+                        AND     AA.MODEL = #{model}
+                    </if>
+                    <if test="@org.apache.commons.lang3.StringUtils@isNotBlank(detailModel)">
+                        AND     AA.DETAIL_MODEL = #{detailModel}
+                    </if>
+
+                    <if test="strSellPrice != null and endSellPrice != null">
+                        AND     CONCAT(AA.SELL_PRICE, '0000') BETWEEN #{strSellPrice} AND #{endSellPrice}
+                    </if>
+                    <if test="strSellPrice != null and endSellPrice == null">
+                        AND     CONCAT(AA.SELL_PRICE, '0000') <![CDATA[ > ]]> #{strSellPrice}
+                    </if>
+                    <if test="strFromYear != null and endFromYear != null">
+                        AND     AA.FROM_YEAR BETWEEN #{strFromYear} AND #{endFromYear}
+                    </if>
+                    <if test="strFromYear == null and endFromYear != null">
+                        AND     AA.FROM_YEAR <![CDATA[ < ]]> #{endFromYear}
+                    </if>
+                    <if test="strDriveDist != null and endDriveDist != null">
+                        AND     AA.DRIVE_DIST BETWEEN #{strDriveDist} AND #{endDriveDist}
+                    </if>
+                    <if test="strDriveDist != null and endDriveDist == null">
+                        AND     AA.DRIVE_DIST <![CDATA[ > ]]> #{strDriveDist}
+                    </if>
+                    <if test="@org.apache.commons.lang3.StringUtils@isNotBlank(fuel)">
+                        AND     AA.FUEL REGEXP REPLACE(#{fuel}, ',', '|')
+                    </if>
+                    <if test="@org.apache.commons.lang3.StringUtils@isNotBlank(carType)">
+                        AND     AA.CAR_TYPE REGEXP REPLACE(#{carType}, ',', '|')
+                    </if>
+                    <if test="@org.apache.commons.lang3.StringUtils@isNotBlank(color)">
+                        AND     AA.COLOR REGEXP REPLACE(#{color}, ',', '|')
+                    </if>
+
+                    <if test="@org.apache.commons.lang3.StringUtils@isNotBlank(sigun)">
+                        AND     AA.SIGUN = #{sigun}
+                    </if>
+
+                    <if test="!@org.springframework.util.CollectionUtils@isEmpty(sellCarSeqs)">
+                        AND     AA.SELL_CAR_SEQ IN
+                            <foreach collection="sellCarSeqs" item="sellCarSeq" separator="," open="(" close=")">
+                                #{sellCarSeq}
+                            </foreach>
+                    </if>
+
+                    <!-- 추천매물 -->
+                    <if test="selectType == 'recommend'">
+                        AND     AA.SELL_CAR_SEQ != #{sellCarSeq}
+                        AND     AA.CAR_STAT_CD = 'D1002'
+                    </if>
+
+                    ORDER BY ${orderType}
+
+                ) A1
+        LEFT JOIN
+                (
+                    SELECT	A.SELL_CAR_SEQ AS SELL_CAR_SEQ_1, C.TAG_SEQ, C.TAG_NM
+                    FROM	SELL_CAR_MODEL A
+                    INNER JOIN CAR_TAG_MAP B
+                    ON		A.SELL_CAR_SEQ = B.SELL_CAR_SEQ
+                    INNER JOIN TAG_MNG C
+                    ON		B.TAG_SEQ = C.TAG_SEQ
+                    ORDER BY C.ORD_NO ASC
+                ) B1
+        ON		A1.SELL_CAR_SEQ = B1.SELL_CAR_SEQ_1
+        WHERE 	1 = 1
+    </sql>
+
+    <!-- 매물리스트 count 조회 -->
+    <select id="selectItemListCount" resultType="java.lang.Integer">
+        SELECT  COUNT(*)
+        FROM    (
+                    SELECT  RNUM
+                    FROM    (
+                      <include refid="sqlItemList" />
+                    ) T
+                    GROUP BY RNUM
+        ) TT
+    </select>
+
+    <!-- 매물리스트 조회 -->
+    <select id="selectItemList" resultMap="resultFrontItemVo">
+        <include refid="sqlItemList" />
+        AND   RNUM BETWEEN (#{currPage} - 1)  * #{contentsCount} + 1 AND #{currPage} * #{contentsCount}
+    </select>
+
+    <!-- 전시장 지역 조회 -->
+    <select id="selectExhHallSigun" resultType="kr.co.vwa.domain.ExhibitionHallVo">
+        SELECT	A.SIGUN
+        FROM
+                (
+                    SELECT	SIGUN, EXPS_NO
+                    FROM	EXHIBITION_HALL
+                    WHERE   DB_STS = 'A'
+                    ORDER BY EXPS_NO ASC
+                ) A
+        GROUP BY A.SIGUN
+        ORDER BY A.EXPS_NO ASC
+    </select>
+
+    <!-- 매물 조회 수 증가 -->
+    <update id="updateSellCarModelHits">
+        UPDATE SELL_CAR_MODEL
+        SET HITS = HITS + 1
+        WHERE SELL_CAR_SEQ = #{sellCarSeq}
+    </update>
+
+    <!-- 매물상세 - 88가지 품질점검표 레이어 여부 조회 -->
+    <select id="selectQualityChkYn" resultType="String">
+        SELECT	IF(SUM(CAST(NULLIF(B.CONF_YN , '') IS NULL AS UNSIGNED)) <![CDATA[ < ]]> 1, 'Y', 'N')
+        FROM
+                (
+                    SELECT
+                            HI.CD, HI.CD_NM, UPP_CD
+                    FROM    (
+                            SELECT  CONNECT_BY_PARENT_EQ_PRIOR_ID_WITH_LEVEL(CD, 3) AS CD,
+                                    CAST(@LEVEL AS SIGNED) AS LEVEL
+                            FROM    (
+                                    SELECT  @START_WITH := 'J1000',
+                                            @CD := @START_WITH,
+                                            @LEVEL := 0
+                                    ) VARS, CODE_MNG
+                            WHERE   @CD IS NOT NULL
+                            ) HO
+                    JOIN    CODE_MNG HI
+                    ON      HI.CD = HO.CD
+                    WHERE	LEVEL = 2
+                ) A
+        LEFT JOIN QUALITY_CHK B
+        ON		A.CD = B.CD
+        AND		B.SELL_CAR_SEQ = #{sellCarSeq}
+        AND		B.DB_STS = 'A'
+    </select>
+
+</mapper>

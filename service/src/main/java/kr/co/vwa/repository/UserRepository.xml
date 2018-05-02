@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.co.vwa.repository.UserRepository">
+
+    <select id="selectUserInfoByUsername" resultType="kr.co.vwa.domain.User">
+        SELECT
+            ADM_SEQ, AUTH_TYPE, fn_user_auth(ADM_SEQ) AS ROLE, ID AS username, PWD AS password, VISIT_DAY, MEMO, USE_YN, EXH_HALL_SEQ
+            , (SELECT AUTH FROM ADMIN_EXHIBITION_HALL_MAP WHERE ADM_SEQ = A.ADM_SEQ AND EXH_HALL_SEQ = A.EXH_HALL_SEQ) DEFAULT_ROLE
+        FROM ADMIN_MNG A
+        WHERE ID = #{username}
+        AND DB_STS = 'A'
+    </select>
+
+    <update id="updateUserVisitDay">
+        UPDATE ADMIN_MNG
+        SET VISIT_DAY = NOW()
+        WHERE ID = #{username}
+        AND DB_STS = 'A'
+    </update>
+
+    <insert id="insertUserInfo" >
+        INSERT INTO ADMIN_MNG
+        (
+            AUTH_TYPE
+            , ID
+            , PWD
+            , MEMO
+            , USE_YN
+            , DB_STS
+            , CRE_USER
+            , CRE_DATE
+        ) VALUES (
+            #{authType}
+            , #{id}
+            , #{pwd}
+            , #{memo}
+            , 'Y'
+            , 'A'
+            , 'SYSTEM'
+            , NOW()
+        )
+    </insert>
+
+    <select id="isValidateIpAddress" resultType="boolean">
+        SELECT IF(COUNT(*) = 0, 0, 1)
+        FROM ADMIN_EXHIBITION_HALL_MAP A
+        , EXHIBITION_HALL_IP B
+        WHERE A.EXH_HALL_SEQ = B.EXH_HALL_SEQ
+        AND A.ADM_SEQ = #{admSeq}
+        AND B.IP_ADDRESS = #{ipAdress}
+        AND A.DB_STS = 'A'
+        AND B.DB_STS = 'A'
+    </select>
+
+</mapper>

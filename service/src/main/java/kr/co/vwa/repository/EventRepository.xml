@@ -1,0 +1,317 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.co.vwa.repository.EventRepository">
+    <resultMap id="eventFile" type="kr.co.vwa.domain.EventVo">
+        <association property="file" column="IMG_SEQ" javaType="kr.co.vwa.domain.FileVo" select="selectFile" />
+        <association property="mainImgFile" column="MAIN_IMG_SEQ"  javaType="kr.co.vwa.domain.FileVo" select="selectFile" />
+    </resultMap>
+
+    <!--이벤트관리/목록 조회-->
+    <select id="eventList" parameterType="java.util.Map" resultMap="eventFile">
+        SELECT EVENT_SEQ,
+                TITLE,
+                TYPE,
+                IMG_SEQ,
+                DATE_FORMAT(STR_DATE, '%Y.%m.%d') AS STRDATE,
+                DATE_FORMAT(END_DATE, '%Y.%m.%d') AS ENDDATE,
+                UPD_USER,
+                DATE_FORMAT(UPD_DATE, '%Y.%m.%d %H:%i') AS UPDDATE,
+                EXPS_YN,
+                <![CDATA[
+                CASE    WHEN STR_DATE > DATE_FORMAT(NOW(), '%Y-%m-%d') THEN 0
+                        WHEN END_DATE < DATE_FORMAT(NOW(), '%Y-%m-%d') THEN 2
+                        WHEN DATE_FORMAT(NOW(), '%Y-%m-%d') BETWEEN STR_DATE AND END_DATE THEN 1
+                ELSE NULL
+                END AS FLAG
+                ]]>
+        FROM EVENT
+        WHERE DB_STS='A'
+        <if test="expsYn != null and expsYn != ''">
+            AND EXPS_YN = 'Y'
+        </if>
+        <if test="query != null and query != ''">
+            AND TITLE LIKE CONCAT('%',#{query},'%')
+        </if>
+        ORDER BY EXPS_YN DESC, IFNULL(UPD_DATE, CRE_DATE) DESC
+        LIMIT #{defaultContentsCount} OFFSET #{limitRow}
+    </select>
+
+    <!--파일이미지 조회-->
+    <select id="selectFile" resultType="kr.co.vwa.domain.FileVo">
+        SELECT
+            FILE_SEQ
+            , FILE_NM
+            , FILE_PATH
+            , FILE_SIZE
+            , FILE_EXT
+            , ORI_FILE_NM
+            , CRE_DATE
+            , CRE_USER
+        FROM FILE_INFO
+        WHERE FILE_SEQ = #{imgSeq}
+    </select>
+
+    <!--이벤트관리/목록 전체 개수 조회-->
+    <select id="eventTotalCount" parameterType="java.util.Map" resultType="java.lang.Integer">
+        SELECT COUNT(*) AS COUNT
+        FROM EVENT
+        WHERE DB_STS='A'
+        <if test="expsYn != null and expsYn != ''">
+            AND EXPS_YN = 'Y'
+        </if>
+        <if test="query != null and query != ''">
+            AND TITLE LIKE CONCAT('%',#{query},'%')
+        </if>
+    </select>
+
+    <!--이벤트관리/등록-->
+    <insert id="eventRegiste" parameterType="kr.co.vwa.domain.EventVo" useGeneratedKeys="true" keyProperty="eventSeq">
+        INSERT INTO EVENT(
+                TITLE,
+                TYPE,
+                CTNT_PC,
+                CTNT_MO,
+                <if test="type =='Link'">
+                    NEW_WIN_YN_PC,
+                    NEW_WIN_YN_MO,
+                </if>
+                IMG_SEQ,
+                MAIN_IMG_SEQ,
+                EXPS_YN,
+                STR_DATE,
+                END_DATE,
+                WINN_NEW_WIN_YN,
+                WINN_LINK_URL,
+                DB_STS,
+                CRE_USER,
+                CRE_DATE,
+                UPD_USER,
+                UPD_DATE)
+        VALUES(#{title},
+                #{type},
+                <choose>
+                    <when test="type =='Link'">
+                        #{pcLinkUrl},
+                        #{moLinkUrl},
+                    </when>
+                    <otherwise>
+                        #{ctntPc},
+                        #{ctntMo},
+                    </otherwise>
+                </choose>
+                <if test="type =='Link'">
+                    <choose>
+                        <when test="newWinYnPc != null and newWinYnPc != ''">
+                            'Y',
+                        </when>
+                        <otherwise>
+                            'N',
+                        </otherwise>
+                    </choose>
+                    <choose>
+                        <when test="newWinYnMo != null and newWinYnMo != ''">
+                            'Y',
+                        </when>
+                        <otherwise>
+                            'N',
+                        </otherwise>
+                    </choose>
+                </if>
+                #{imgSeq},
+                #{mainImgSeq},
+                <choose>
+                    <when test="expsYn != null and expsYn != ''">
+                        'Y',
+                    </when>
+                    <otherwise>
+                        'N',
+                    </otherwise>
+                </choose>
+                #{strDate},
+                #{endDate},
+                <choose>
+                    <when test="winnNewWinYn != null and winnNewWinYn != ''">
+                        'Y',
+                    </when>
+                    <otherwise>
+                        'N',
+                    </otherwise>
+                </choose>
+                #{winnLinkUrl},
+                'A',
+                #{updUser},
+                NOW(),
+                #{updUser},
+                NOW())
+    </insert>
+
+    <!--이벤트관리/목록 노출여부 수정-->
+    <update id="eventExpsYnUpdate" parameterType="kr.co.vwa.domain.EventVo">
+        UPDATE EVENT
+        SET EXPS_YN=#{expsYn},
+            UPD_DATE=NOW(),
+            UPD_USER=#{updUser}
+        WHERE EVENT_SEQ=#{eventSeq}
+    </update>
+
+    <!--이벤트관리/상세 조회-->
+    <select id="eventDetailVo" parameterType="kr.co.vwa.domain.EventVo" resultMap="eventFile">
+        SELECT EVENT_SEQ,
+                TITLE,
+                TYPE,
+                CTNT_PC,
+                CTNT_MO,
+                NEW_WIN_YN_PC,
+                NEW_WIN_YN_MO,
+                IMG_SEQ,
+                MAIN_IMG_SEQ,
+                EXPS_YN,
+                STR_DATE,
+                END_DATE,
+                WINN_NEW_WIN_YN,
+                WINN_LINK_URL,
+                DB_STS,
+                CRE_USER,
+                CRE_DATE,
+                UPD_USER,
+                UPD_DATE,
+                <![CDATA[
+                CASE    WHEN STR_DATE > DATE_FORMAT(NOW(), '%Y-%m-%d') THEN 0
+                        WHEN END_DATE < DATE_FORMAT(NOW(), '%Y-%m-%d') THEN 2
+                        WHEN DATE_FORMAT(NOW(), '%Y-%m-%d') BETWEEN STR_DATE AND END_DATE THEN 1
+                ELSE NULL
+                END AS FLAG
+                ]]>
+        FROM EVENT
+        WHERE DB_STS='A'
+        AND EVENT_SEQ=#{eventSeq}
+    </select>
+
+    <!--이벤트관리/상세 삭제-->
+    <update id="eventDelete" parameterType="kr.co.vwa.domain.EventVo">
+        UPDATE EVENT
+        SET DB_STS='D'
+        WHERE EVENT_SEQ=#{eventSeq}
+    </update>
+
+    <!--이벤트관리/상세 수정-->
+    <update id="updateEvent" parameterType="kr.co.vwa.domain.EventVo">
+        UPDATE EVENT
+        SET TITLE=#{title},
+            TYPE=#{type},
+            <choose>
+                <when test="type =='Link'">
+                    CTNT_PC=#{pcLinkUrl},
+                    CTNT_MO=#{moLinkUrl},
+                    <choose>
+                        <when test="newWinYnPc != null and newWinYnPc != ''">
+                            NEW_WIN_YN_PC='Y',
+                        </when>
+                        <otherwise>
+                            NEW_WIN_YN_PC='N',
+                        </otherwise>
+                    </choose>
+                    <choose>
+                        <when test="newWinYnMo != null and newWinYnMo != ''">
+                            NEW_WIN_YN_MO='Y',
+                        </when>
+                        <otherwise>
+                            NEW_WIN_YN_MO='N',
+                        </otherwise>
+                    </choose>
+                </when>
+                <otherwise>
+                    CTNT_PC=#{ctntPc},
+                    CTNT_MO=#{ctntMo},
+                    NEW_WIN_YN_PC=NULL,
+                    NEW_WIN_YN_MO=NULL,
+                </otherwise>
+            </choose>
+            IMG_SEQ=#{imgSeq},
+            MAIN_IMG_SEQ=#{mainImgSeq},
+            <choose>
+                <when test="expsYn != null and expsYn != ''">
+                    EXPS_YN='Y',
+                </when>
+                <otherwise>
+                    EXPS_YN='N',
+                </otherwise>
+            </choose>
+            STR_DATE=#{strDate},
+            END_DATE=#{endDate},
+            <choose>
+                <when test="winnNewWinYn != null and winnNewWinYn != ''">
+                    WINN_NEW_WIN_YN='Y',
+                </when>
+                <otherwise>
+                    WINN_NEW_WIN_YN='N',
+                </otherwise>
+            </choose>
+            WINN_LINK_URL=#{winnLinkUrl},
+            UPD_USER=#{updUser},
+            UPD_DATE=NOW()
+        WHERE EVENT_SEQ=#{eventSeq}
+    </update>
+
+    <!--이벤트/목록 프론트 조회-->
+    <select id="eventFrontList" resultMap="eventFile">
+        SELECT *
+        FROM (SELECT EVENT_SEQ,
+                TITLE,
+                TYPE,
+                IMG_SEQ,
+                MAIN_IMG_SEQ,
+                NEW_WIN_YN_PC,
+                NEW_WIN_YN_MO,
+                CTNT_PC,
+                CTNT_MO,
+                DATE_FORMAT(STR_DATE, '%Y.%m.%d') AS STRDATE,
+                DATE_FORMAT(END_DATE, '%Y.%m.%d') AS ENDDATE,
+                WINN_NEW_WIN_YN,
+                WINN_LINK_URL,
+                UPD_USER,
+                DATE_FORMAT(UPD_DATE, '%Y.%m.%d %H:%i') AS UPDDATE,
+                EXPS_YN,
+                DATE_FORMAT(NOW(), '%Y%m%d') TODAY,
+                <![CDATA[
+                    CASE WHEN STR_DATE >= DATE_FORMAT(NOW(), '%Y-%m-%d') THEN 0
+                         WHEN END_DATE < DATE_FORMAT(NOW(), '%Y-%m-%d') THEN 2
+                         WHEN DATE_FORMAT(NOW(), '%Y-%m-%d') BETWEEN STR_DATE AND END_DATE THEN 1
+                    ELSE NULL
+                    END AS FLAG
+                ]]>
+            FROM EVENT
+            WHERE DB_STS='A'
+            AND EXPS_YN = 'Y'
+            ORDER BY STR_TO_DATE(END_DATE, '%Y-%m-%d') DESC , IFNULL(UPD_DATE, CRE_DATE) DESC
+            ) A
+        WHERE FLAG !=0
+    </select>
+
+    <!--이벤트/목록 프론트 메인조회-->
+    <select id="eventFrontMainList" resultMap="eventFile">
+        SELECT
+            EVENT_SEQ,
+            TITLE,
+            TYPE,
+            IMG_SEQ,
+            MAIN_IMG_SEQ,
+            NEW_WIN_YN_PC,
+            NEW_WIN_YN_MO,
+            CTNT_PC,
+            CTNT_MO,
+            DATE_FORMAT(STR_DATE, '%Y.%m.%d') AS STRDATE,
+            DATE_FORMAT(END_DATE, '%Y.%m.%d') AS ENDDATE,
+            WINN_NEW_WIN_YN,
+            WINN_LINK_URL,
+            UPD_USER,
+            DATE_FORMAT(UPD_DATE, '%Y.%m.%d %H:%i') AS UPDDATE,
+            EXPS_YN,
+            DATE_FORMAT(NOW(), '%Y%m%d') TODAY
+        FROM EVENT
+        WHERE DB_STS='A'
+        AND EXPS_YN = 'Y'
+        AND ( STR_DATE IS NULL OR DATE_FORMAT(NOW(), '%Y-%m-%d') BETWEEN STR_DATE AND END_DATE )
+        ORDER BY IFNULL(UPD_DATE, CRE_DATE) DESC
+    </select>
+</mapper>
