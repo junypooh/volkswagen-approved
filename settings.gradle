@@ -1,0 +1,6 @@
+rootProject.name = 'volkswagen-approved'
+include 'common'
+include 'domain'
+include 'service'
+include 'web'
+include 'manager'
