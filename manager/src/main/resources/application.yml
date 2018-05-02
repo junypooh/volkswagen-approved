@@ -1,0 +1,182 @@
+server:
+  port: 9090
+  error:
+    whitelabel:
+      enabled: false
+#  session:
+#    timeout: 1800 # 단위/초
+
+# logback
+logging:
+  pattern:
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+  level:
+    ROOT: INFO
+    org.apache.catalina: INFO
+
+spring:
+  session:
+    store-type: jdbc
+    jdbc:
+      initializer:
+        enabled: true
+      schema: classpath:org/springframework/session/jdbc/schema-@@platform@@.sql
+  http:
+    multipart:
+      enabled: true
+      max-file-size: 3MB
+      max-request-size: 10MB
+  mail:
+    host: 
+    port: 587
+    username: 
+    password: 
+    sendAddr: 
+    protocol: smtp
+    properties:
+      mail.smtp.auth : true
+      mail.smtp.starttls.enable : true
+      mail.debug : true
+
+# naver 지도 정보
+mapInfo:
+  clientId: 
+
+---
+spring:
+  profiles: local
+
+  datasource:
+    type: com.zaxxer.hikari.HikariDataSource
+    driver-class-name: com.mysql.jdbc.Driver
+    hikari:
+      connection-timeout: 5000
+      max-lifetime: 1800000
+      pool-name: hikariCP-Pool
+      initialization-fail-fast: true
+      leak-detection-threshold: 15000
+      maximum-pool-size: 5
+      connection-test-query: SELECT 1
+    url: jdbc:mysql://172.0.0.1:3306/vwa?autoReconnect=true&useSSL=false
+    username: 
+    password: 
+
+  devtools:
+    livereload:
+      enabled: true
+
+server:
+  context-path: /manager
+
+# S3 정보
+s3:
+  burket:
+    name: 
+  accessKeyId: 
+  secretAccessKey: 
+  url: 
+  upload:
+    path: local
+
+vwa:
+  front:
+    url: http://localhost:8090/web
+
+# logback
+logging:
+  level:
+    org.springframework: DEBUG
+    org.springframework.data: INFO
+    kr.co.vwa: DEBUG
+
+---
+spring:
+  profiles: development
+
+  datasource:
+    type: com.zaxxer.hikari.HikariDataSource
+    driver-class-name: com.mysql.jdbc.Driver
+    hikari:
+      connection-timeout: 5000
+      max-lifetime: 1800000
+      pool-name: hikariCP-Pool
+      initialization-fail-fast: true
+      leak-detection-threshold: 15000
+      maximum-pool-size: 5
+      connection-test-query: SELECT 1
+    url: ${VWA_DB_URL}
+    username: ${VWA_DB_USERNAME}
+    password: ${VWA_DB_PASSWORD}
+
+server:
+  context-path: /
+  tomcat:
+    remote-ip-header: x-forwarded-for
+    protocol-header: x-forwarded-proto
+
+# S3 정보
+s3:
+  burket:
+    name: 
+  accessKeyId: 
+  secretAccessKey: 
+  url: 
+  upload:
+    path: development
+
+vwa:
+  front:
+    url: https://dev.volkswagenapproved.co.kr
+
+# logback
+logging:
+  level:
+    org.springframework: DEBUG
+    org.springframework.data: INFO
+    kr.co.vwa: DEBUG
+
+---
+spring:
+  profiles: production
+
+  datasource:
+    type: com.zaxxer.hikari.HikariDataSource
+    driver-class-name: com.mysql.jdbc.Driver
+    hikari:
+      connection-timeout: 5000
+      max-lifetime: 1800000
+      pool-name: hikariCP-Pool
+      initialization-fail-fast: true
+      leak-detection-threshold: 15000
+      maximum-pool-size: 5
+      connection-test-query: SELECT 1
+    url: ${VWA_DB_URL}
+    username: ${VWA_DB_USERNAME}
+    password: ${VWA_DB_PASSWORD}
+
+server:
+  context-path: /
+  tomcat:
+    remote-ip-header: x-forwarded-for
+    protocol-header: x-forwarded-proto
+
+# S3 정보
+s3:
+  burket:
+    name: 
+  accessKeyId: 
+  secretAccessKey: 
+  url: 
+  upload:
+    path: production
+
+vwa:
+  front:
+    url: https://www.volkswagenapproved.co.kr
+
+# logback
+logging:
+  level:
+    org.springframework: INFO
+    org.springframework.data: INFO
+    kr.co.vwa: INFO
